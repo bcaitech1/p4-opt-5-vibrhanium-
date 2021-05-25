@@ -1,0 +1,26 @@
+# Information for params
+# DATA_PATH: The name of the folder of dataset
+# DATASET: The name of the dataset
+# AUG_TRAIN: Which policy to use for train. Check src/augmentation/policies.py
+# AUG_TEST: Which policy to use for test. Check src/augmentation/policies.py
+# AUG_TRAIN_PARAMS: null if AUG_TRAIN does not contain "randaugment" else need (n_select, level, n_level)
+#   n_select: The number of random augmentations you want to apply
+#   level: The magnitude of augmentation (how strong), if you set level to null, it will choose randomly
+#   n_level: level will be choosen between 0, n_level, and the magnitude will be (level / n_level)
+# AUG_TEST_PARAMS: Always set to null
+# BATCH_SIZE: Batch size for training
+# VAL_RATIO:  How many data to be used for validation checking
+
+DATA_PATH: "/opt/ml/input/cifar10"
+DATASET: "CIFAR10"
+IMG_SIZE: 32
+AUG_TRAIN: "randaugment_train"
+AUG_TEST: "simple_augment_test"
+AUG_TRAIN_PARAMS: 
+    n_select: 2
+    level: null
+BATCH_SIZE: 128
+EPOCHS: 2
+VAL_RATIO: 0.0
+INIT_LR: 0.1
+FP16: True

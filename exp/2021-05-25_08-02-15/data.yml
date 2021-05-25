@@ -1,0 +1,13 @@
+AUG_TEST: simple_augment_test
+AUG_TRAIN: randaugment_train
+AUG_TRAIN_PARAMS:
+  level: null
+  n_select: 2
+BATCH_SIZE: 64
+DATASET: TACO
+DATA_PATH: /opt/ml/input/data/
+EPOCHS: 10
+FP16: true
+IMG_SIZE: 32
+INIT_LR: 0.1
+VAL_RATIO: 0.0
