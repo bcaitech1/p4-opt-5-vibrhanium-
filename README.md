@@ -13,7 +13,7 @@
 
 ## :memo: Table of Contents
 
-- [경량화의 목적](#경량화의-목적)
+<!-- - [경량화의 목적](#경량화의-목적) -->
 - [Part 1. 모델 경량화](#part-1-모델)
   - [Efficient Architecture Design]()
   - [Network Pruning]()
@@ -31,11 +31,11 @@
 </br>
 
 ---
-
+<!-- 
 ### [경량화의 목적]()
 
 - 모델의연구와는별개로,산업에적용되기위해서거쳐야하는과정
-- 요구조건(하드웨어종류,latency제한,요구throughput,성능)들간의trade-off를 고려하여모델경량화/최적화를수행
+- 요구조건(하드웨어종류,latency제한,요구throughput,성능)들간의trade-off를 고려하여모델경량화/최적화를수행 -->
 
 ---
 
