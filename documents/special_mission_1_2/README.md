@@ -28,6 +28,13 @@
     - [MedianPruner 공식문서 참조](https://optuna.readthedocs.io/en/stable/reference/generated/optuna.pruners.MedianPruner.html#optuna.pruners.MedianPruner)
     - 우리가 아는 pruning과는 조금 다른, early stopping 같은 개념이라고 보면 될 것 같습니다.
   
+## Mission 1_ver2
+### 풀이
+[코드 첨부](./special_1_v2.py)  
+
+### 눈여겨볼 점
+- 기존 mission1의 코드와 같은 역할이지만, optuna로 tunning 할 parameter만 objective함수 안에 넣는 방식입니다. 
+- 지금 코드는 optuna의 다양성을 설명하기 위한 코드이고, 전체 코드[https://www.youtube.com/watch?v=4MK_OJJ82YI&ab_channel=AbhishekThakur]는 여기서 확인하실 수 있습니다. 
 
 ## Mission 2
 ### 내용
@@ -45,3 +52,5 @@
 - 현재 코드의 경우 `flops`와 `accuracy`를 `objective` function에서 return하고 있으므로 이 두 값이 최적화 대상이 됩니다.
 - return하는 순서에 맞추어 `study = optuna.create_study(directions=["minimize", "maximize"])`와 같이 **최적화 방향**을 설정합니다.
 - 이전과 달리 argument가 `direction`이 아닌 `directions`로 들어간다는 점 짚고 넘어가면 좋을 것 같습니다.
+
+
