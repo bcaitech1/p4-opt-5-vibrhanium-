@@ -34,7 +34,7 @@
 
 ### 눈여겨볼 점
 - 기존 mission1의 코드와 같은 역할이지만, optuna로 tunning 할 parameter만 objective함수 안에 넣는 방식입니다. 
-- 지금 코드는 optuna의 다양성을 설명하기 위한 코드이고, 전체 코드[https://www.youtube.com/watch?v=4MK_OJJ82YI&ab_channel=AbhishekThakur]는 여기서 확인하실 수 있습니다. 
+- 지금 코드는 optuna의 다양성을 설명하기 위한 코드이고, [전체 코드](https://www.youtube.com/watch?v=4MK_OJJ82YI&ab_channel=AbhishekThakur)는 여기서 확인하실 수 있습니다. 
 
 ## Mission 2
 ### 내용
