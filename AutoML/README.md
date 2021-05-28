@@ -17,5 +17,5 @@ AutoML을 통해 어느정도의 성능을 내면서, 연산량은 작은 모델
 [`Optuna`](https://optuna.org/) [`Postgresql`](https://www.postgresql.org/) [`wandb`](https://wandb.ai/site) [`MLflow`](https://mlflow.org/)
 |Misson|내용|
 |:---:|---|
-|**1**|Optuna에 DB(`Postgresql`) 연동<br/>&nbsp;&nbsp;a) PStage에서 지급된 서버에 postgresql 직접설치/도커 이미지를 셋업하여 연동하기<br/>&nbsp;&nbsp;b) 외부 cloud 또는 개인 pc에 postgresql을 직접설치/도커 이미지로 셋업하여 연동하기|
-|**2**|Baseline 코드에 실험 분석 API(`wandb` 또는 `mlflow`) 연동| 
+|**1**|Optuna에 DB연동<br/>&nbsp;&nbsp;a) PStage에서 지급된 서버에 postgresql 직접설치/도커 이미지를 셋업하여 연동하기<br/>&nbsp;&nbsp;b) 외부 cloud 또는 개인 pc에 postgresql을 직접설치/도커 이미지로 셋업하여 연동하기|
+|**2**|Baseline 코드에 실험 분석 API 연동하여 AutoML의 search space가 적절하게 설정되었는지 등의 요소들을 잘 파악할 수 있도록 다양한 configuration들을 로깅|
