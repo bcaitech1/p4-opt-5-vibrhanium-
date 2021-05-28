@@ -16,6 +16,6 @@ AutoML을 통해 어느정도의 성능을 내면서, 연산량은 작은 모델
 ### Special mission2 - DB & 실험 분석 API 연동하기
 [`Optuna`](https://optuna.org/) [`Postgresql`](https://www.postgresql.org/) [`wandb`](https://wandb.ai/site) [`MLflow`](https://mlflow.org/)
 |Misson|내용|
-|:---:|---|
+|:---:|-------------------------------------------------------------------------------------------------------------------------------------|
 |**1**|Optuna에 DB(`Postgresql`) 연동|
 |**2**|Baseline 코드에 실험 분석 API(`wandb` 또는 `mlflow`) 연동| 
