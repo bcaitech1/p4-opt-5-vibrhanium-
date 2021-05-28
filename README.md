@@ -7,4 +7,4 @@
 
 #### :triangular_flag_on_post: (새로운) 경량 모델 탐색
 - NAS(Neural Architecture Search)
-- AutoML(Automated Machine Learning)
+- [AutoML(Automated Machine Learning)](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/jaegyeong/readme/AutoML)
