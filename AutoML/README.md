@@ -14,7 +14,7 @@ AutoML을 통해 어느정도의 성능을 내면서, 연산량은 작은 모델
 |**4**|AutoML의 학습 시간을 줄이는 방법에는 어떤 것들이 있을지 고민|
 
 ### Special mission2 - DB & 실험 분석 API 연동하기
-[`Optuna`](https://optuna.org/) [`Postgresql`](https://www.postgresql.org/) [`wandb`](https://wandb.ai/site) [`mlflow`](https://mlflow.org/)
+[`Optuna`](https://optuna.org/) [`Postgresql`](https://www.postgresql.org/) [`wandb`](https://wandb.ai/site) [`MLflow`](https://mlflow.org/)
 |Misson|내용|
 |:---:|---|
 |**1**|Optuna에 DB(`Postgresql`) 연동|
