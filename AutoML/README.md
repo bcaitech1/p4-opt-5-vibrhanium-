@@ -1,7 +1,7 @@
 ## AutoML(Automated Machine Learning)
-:fast_forward:[[Pstage] 모델최적화 - 3강 AutoML 이론](https://www.edwith.org/bcaitech1/lecture/782185?isDesc=false)
-<br/>:fast_forward:[[Pstage] 모델최적화 4강 AutoML 실습](https://www.edwith.org/bcaitech1/lecture/782186?isDesc=false)
-<br/>:fast_forward:[[Pstage] 모델최적화 4강 Data Augmentation 및 AutoML 실습](https://www.edwith.org/bcaitech1/lecture/782190?isDesc=false)
+:arrow_forward:[[Pstage] 모델최적화 - 3강 AutoML 이론](https://www.edwith.org/bcaitech1/lecture/782185?isDesc=false)
+<br/>:arrow_forward:[[Pstage] 모델최적화 4강 AutoML 실습](https://www.edwith.org/bcaitech1/lecture/782186?isDesc=false)
+<br/>:arrow_forward:[[Pstage] 모델최적화 4강 Data Augmentation 및 AutoML 실습](https://www.edwith.org/bcaitech1/lecture/782190?isDesc=false)
 <br/>AutoML을 통해 어느정도의 성능을 내면서, 연산량은 작은 모델을 탐색해본다.
 
 ## Special mission - `Optuna` 사용
