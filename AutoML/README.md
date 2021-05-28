@@ -4,7 +4,7 @@ AutoML을 통해 어느정도의 성능을 내면서, 연산량은 작은 모델
 <br/>:arrow_forward: [[Pstage] 모델최적화 - 4강 AutoML 실습](https://www.edwith.org/bcaitech1/lecture/782186?isDesc=false)
 <br/>:arrow_forward: [[Pstage] 모델최적화 - 4강 Data Augmentation 및 AutoML 실습](https://www.edwith.org/bcaitech1/lecture/782190?isDesc=false)
 
-### Special mission1 - Model Search 코드 작성하기 [`Optuna`](https://optuna.org/)
+### Special mission1 - Model Search 코드 작성하기 (using [`Optuna`](https://optuna.org/))
 |Misson|내용|
 |:---:|---|
 |[**1**](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/jaegyeong/readme/AutoML/special_mission_1_2)|Fashion MNIST 데이터셋을 사용하여 Toy model에 hyperparamter(batch_size, epochs, Learning rate 등)를 search하는 코드 작성하여 Acc를 maximize하는 configuration을 탐색|
