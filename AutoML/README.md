@@ -1,8 +1,8 @@
 ## AutoML(Automated Machine Learning)
 AutoML을 통해 어느정도의 성능을 내면서, 연산량은 작은 모델을 탐색해본다.
 <br/>[:arrow_forward:](https://www.edwith.org/bcaitech1/lecture/782185?isDesc=false) [Pstage] 모델최적화 - 3강 AutoML 이론
-<br/>[:arrow_forward:](https://www.edwith.org/bcaitech1/lecture/782186?isDesc=false) [Pstage] 모델최적화 4강 AutoML 실습
-<br/>[:arrow_forward:](https://www.edwith.org/bcaitech1/lecture/782190?isDesc=false) [Pstage] 모델최적화 4강 Data Augmentation 및 AutoML 실습
+<br/>[:arrow_forward:](https://www.edwith.org/bcaitech1/lecture/782186?isDesc=false) [Pstage] 모델최적화 - 4강 AutoML 실습
+<br/>[:arrow_forward:](https://www.edwith.org/bcaitech1/lecture/782190?isDesc=false) [Pstage] 모델최적화 - 4강 Data Augmentation 및 AutoML 실습
 
 ## Special mission - `Optuna` 사용
 1. Fashion MNIST 데이터셋을 사용하여 Toy model에 hyperparamter(batch_size, epochs, Learning rate 등)를 search하는 코드를 작성하고, Acc를 maximize하는 configuration을 찾아본다.
