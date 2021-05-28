@@ -3,8 +3,7 @@
 
 ### 모델 경량화를 하는 두가지 접근 방법
 #### :triangular_flag_on_post: (주어진) 모델을 경량화
-기존 가지고 있는 모델을 경량화 하는 방법으로 대부분의 방법이 **후처리**를 필요로 한다.
-<br/>ex. 마스킹된 layer들을 없애는 과정
+기존 가지고 있는 모델을 경량화 하는 방법으로 대부분의 방법이 후처리(마스킹된 layer들을 없애는 과정 등)를 필요로 한다.
 - [Pruning](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/jaegyeong/readme/Pruning)
 - [Tensor decomposition](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/jaegyeong/readme/Tensor_decomposition)
 
