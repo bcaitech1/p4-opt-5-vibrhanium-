@@ -3,9 +3,12 @@
 
 ### 모델 경량화를 하는 두가지 접근 방법
 #### :triangular_flag_on_post: (주어진) 모델을 경량화
+기존 가지고 있는 모델을 경량화 하는 방법으로 대부분의 방법이 **후처리**를 필요로 한다.
+<br/>ex. 마스킹된 layer들을 없애는 과정
 - [Pruning](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/jaegyeong/readme/Pruning)
 - [Tensor decomposition](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/jaegyeong/readme/Tensor_decomposition)
 
 #### :triangular_flag_on_post: (새로운) 경량 모델 탐색
+Search를 통하여 경량 모델을 찾는 기법으로 조금 더 일반적인 적용이 가능하다.
 - [NAS(Neural Architecture Search)](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/jaegyeong/readme/NAS)
 - [AutoML(Automated Machine Learning)](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/jaegyeong/readme/AutoML)
