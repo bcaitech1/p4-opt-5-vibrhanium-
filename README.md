@@ -1,6 +1,6 @@
 # [P Stage4] 모델최적화
 
-### 모델 경량화를 하는 두가지 접근 방법
+### :triangular_flag_on_post: 모델 경량화를 하는 두가지 접근 방법
 #### 1. (주어진) 모델을 경량화
 - Pruning
 - Tensor decomposition
