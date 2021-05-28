@@ -5,7 +5,7 @@
 - Pruning
 - Tensor decomposition
 - ...(계속 추가해 나가면 될 거 같아!)
-- 
+
 #### 2. (새로운) 경량 모델 탐색
 - NAS(Neural Architecture Search)
 - AutoML(Automated Machine Learning)
