@@ -1,4 +1,4 @@
-## AutoML
+## AutoML(Automated Machine Learning)
 AutoML을 통해 어느정도의 성능을 내면서, 연산량은 작은 모델을 탐색해본다.
 
 ## Special mission - `Optuna` 사용
