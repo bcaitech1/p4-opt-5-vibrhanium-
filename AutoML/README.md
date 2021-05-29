@@ -5,9 +5,11 @@ AutoML을 통해 어느정도의 성능을 내면서, 연산량은 작은 모델
 <br/>▶️ [[Pstage] 모델최적화 - 4강 Data Augmentation 및 AutoML 실습](https://www.edwith.org/bcaitech1/lecture/782190?isDesc=false)
 
 
-### 자료
+### Papers
 📑 [Learning Transferable Architectures for Scalable Image Recognition](https://arxiv.org/abs/1707.07012)
 
+
+### Blogs
 📝 [Learning Transferable Architectures for Scalable Image Recognition 리뷰](https://hoya012.github.io/blog/Learning-Transferable-Architectures-for-Scalable-Image-Recognition-Review/)
 
 
