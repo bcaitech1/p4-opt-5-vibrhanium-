@@ -239,6 +239,7 @@ if __name__ == '__main__':
 
     fig = optuna.visualization.plot_optimization_history(study, target=["best_f1", "macs"], target_name=["best_f1", "macs"])
     visualization_dir = '/opt/ml/code/visualization_result'
+    os.mkdir(visualization_dir, exist_ok=True)
     fig.write_html(os.path.join(visualization_dir, f"{model_fn_base}_optimization_history.html"))
 
     fig = optuna.visualization.plot_pareto_front(study)
