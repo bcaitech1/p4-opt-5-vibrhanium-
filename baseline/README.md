@@ -33,6 +33,10 @@ input/
 │   └── model
 │   │   ├── example.yaml
 │   │   └── mobilenetv3.yaml
+│   └── optuna_config
+│   │   ├── base_config.yaml
+│   │   └── module_config.yaml
+│   │   └── optimizer_config.yaml
 ├── environment.yml
 ├── inference.py
 ├── mypy.ini
@@ -139,6 +143,12 @@ docker run -it --gpus all --ipc=host -v $PWD:/opt/ml/code -v ${dataset}:/opt/ml/
 ```
 python train.py --model ${모델 파일 경로} --data ${데이터셋 파일 경로}
 # Ex) python train.py --model configs/model/mobilenetv3.yaml --data configs/data/taco.yaml
+```
+
+`train_optuna.py` 실행
+```
+python train_optuna.py
+# Ex) python train.py
 ```
 
 ### Inference
