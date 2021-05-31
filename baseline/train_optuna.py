@@ -59,124 +59,46 @@ def search_model(trial):  # optuna.trial.Trial) -> Dict[str, Any]:
     
     ncx = [[] for _ in range(n_nc)]  # [[], [], []]
     ncx_args = [[] for _ in range(n_nc)]
+    
     for i in range(n_nc):
+        nc = "Conv"  # suggest_from_config
+        nc_config = modules_config['normal_cell'][nc]
+
         nc_args = []
-        nc = trial.suggest_categorical(
-            name=f"normal_cell_{i}",
-            choices=["Conv", "DWConv", "Bottleneck", "InvertedResidualv2"]
-            # choices=["Conv"]
-            )
-
-        if nc == "Conv":
-            # Conv args: [out_channels, kernel_size, stride, padding, groups, activation]
-            out_channels= trial.suggest_int(f"normal_cell_{i}/out_channel", 3, 5)
-            kernel_size = trial.suggest_int(f"normal_cell_{i}/kernel_size", 3, 5, step=2)
-            activation = trial.suggest_categorical(
-                f"normal_cell_{i}/activation", ["ReLU", "ReLU6", "Hardswish"]
-            )
-
-            stride=1
-            padding=1
-            groups=1
-            nc_args = [out_channels, kernel_size, stride, padding, groups, activation]
-
-        elif nc == "DWConv":
-            out_channels= trial.suggest_int(f"normal_cell_{i}/out_channel", 3, 5)
-            kernel_size = trial.suggest_int(f"normal_cell_{i}/kernel_size", 3, 5, step=2)
-            activation = trial.suggest_categorical(
-                f"normal_cell_{i}/activation", ["ReLU", "ReLU6", "Hardswish"]
-            )
-
-            stride=1
-            padding=1
-            nc_args = [out_channels, kernel_size, stride, padding, activation]
-        
-        elif nc == "Bottleneck":
-            out_channels= trial.suggest_int(f"normal_cell_{i}/out_channel", 3, 5)
-            shortcut = trial.suggest_int(f"normal_cell_{i}/shortcut", 0, 1)  # 1==True, 0==False
-            expansion = trial.suggest_int(f"normal_cell_{i}/expansion", 1, 3)
-            activation = trial.suggest_categorical(
-                f"normal_cell_{i}/activation", ["ReLU", "ReLU6", "Hardswish"]
-            )
-
-            groups = 1
-            nc_args = [out_channels, shortcut, groups, expansion, activation]
-        
-        elif nc == "InvertedResidualv2":
-            out_channels= trial.suggest_int(f"normal_cell_{i}/out_channel", 3, 5)
- 
-            expand_ratio = 0.5
-            stride=1
-            nc_args = [out_channels, expand_ratio, stride]
-        
-        # elif nc == "MBConv":
-        #     out_channels= trial.suggest_int(f"normal_cell_{i}/out_channel", 3, 5)
-        #     kernel_size = trial.suggest_int(f"normal_cell_{i}/kernel_size", 3, 5, step=2)
-
-        #     expand_ratio = 1.0
-        #     stride=1
-        #     nc_args = [out_channels, expand_ratio, stride, kernel_size]
-
-        ncx[i] = nc
+        for arg, value in nc_config.items():
+            if isinstance(value, dict):
+                nc_args.append(suggest_from_config(trial, nc_config, arg))
+            else:
+                nc_args.append(value)
         ncx_args[i] = nc_args
+        
+    # ncx_args
 
-    nc1, nc2, nc3 = ncx
-    nc1_args, nc2_args, nc3_args = ncx_args
-
-    # Sample Reduction Cell(RC)
-    n_rc = 2
-    rcx = [[] for _ in range(n_rc)]
+    # reduction cell
+    n_rc = 1
     rcx_args = [[] for _ in range(n_rc)]
+
     for i in range(n_rc):
-        rc = trial.suggest_categorical(
-            f"reduction_cell_{i}",
-            ["InvertedResidualv2", "InvertedResidualv3", "MaxPool", "AvgPool"]
-            # ["InvertedResidualv2"]
-            )
-        if rc == "InvertedResidualv2":
-            out_channels = trial.suggest_int(f"reduction_cell_{i}/out_channels", 3, 5)
+        rc = "InvertedResidualv3"  # suggest_from_config
+        rc_config = modules_config['reduction_cell'][rc]
 
-            expand_ratio = 0.5
-            stride = 2
-            rc_args = [out_channels, expand_ratio, stride]
-
-        elif rc == "InvertedResidualv3":
-            kernel_size = trial.suggest_int(f"normal_cell_{i}/kernel_size", 3, 5, step=2)
-            expansion = trial.suggest_int(f"normal_cell_{i}/expansion", 1, 3)
-            out_channels = trial.suggest_int(f"reduction_cell_{i}/out_channels", 3, 5)
-            use_se = trial.suggest_int(f"normal_cell_{i}/use_se", 0, 1)  # 1==True, 0==False
-            use_hs =  trial.suggest_int(f"normal_cell_{i}/use_hs", 0, 1)  # 1==True, 0==False
-
-            stride = 2
-            rc_args = [kernel_size, expansion, out_channels, use_se, use_hs, stride]
-
-        elif rc == "MaxPool":
-            kernel_size = trial.suggest_int(f"normal_cell_{i}/kernel_size", 3, 5, step=2)
-
-            stride = 2
-            padding = 0
-            rc_args = [kernel_size, stride, padding]
-
-        elif rc == "AvgPool":
-            kernel_size = trial.suggest_int(f"normal_cell_{i}/kernel_size", 3, 5, step=2)
-
-            stride = 2
-            padding = 0
-            rc_args = [kernel_size, stride, padding]
-
-
-        rcx[i] = rc
+        rc_args = []
+        for arg, value in rc_config.items():
+            if isinstance(value, dict):
+                rc_args.append(suggest_from_config(trial, rc_config, arg))
+            else:
+                rc_args.append(value)
         rcx_args[i] = rc_args
-
-    rc1, rc2 = rcx
-    rc1_args, rc2_args = rcx_args
-
+    
+    # rcx_args
+        
     model_config = {
         "input_channel": 3,
         "depth_multiple": 1.0,
         "width_multiple": 1.0,
         "backbone": []
         }
+    
     model_config["backbone"].append([n1, nc1, nc1_args])
     model_config["backbone"].append([1, rc1, rc1_args])
     model_config["backbone"].append([n2, nc2, nc2_args])
