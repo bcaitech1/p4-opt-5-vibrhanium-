@@ -17,8 +17,8 @@ normal_cells:
             - InvertedResidualv2
             
 # Reduction Cell
-normal_cells:
-  name    : normal_cells
+reduction_cells:
+  name    : reduction_cells
   type    : categorical
   choices :
             - InvertedResidualv2
@@ -26,32 +26,37 @@ normal_cells:
             - MaxPool
             - AvgPool
 
-
 # Batch size
 batch_size:
   name    : batch_size
   type    : categorical
   choices :
-            - 16
             - 32
-            - 64
 
 # Epochs
 epochs:
   name : epochs
   type : int
-  low  : 10
+  low  : 30
   high : 30
   step : 10
 
-
 # Categorical parameter
 optimizer:
+  value   : AdamW
   name    : optimizer
   type    : categorical
   choices : 
-            - RMSprop
-            - Adam
+            # - RMSprop
+            # - Adam
+            - AdamW
+
+# Input image size
+img_size:
+  name    : img_size
+  type    : categorical
+  choices :
+            - 224
 
 # Integer parameter - 
 num_layers:
@@ -81,10 +86,19 @@ dropout_rate:
   name : dropout_rate
   type : float
   low  : 0.2
-  high : 0.5
+  high : 0.2
 
 # Floating point parameter (log)
 learning_rate:
+  name : learning_rale
+  type : float
+  low  : 1e-5
+  high : 1e-1
+  log  : True
+
+# Floating point parameter (log)
+max_learning_rate:
+  value: 0.01
   name : learning_rale
   type : float
   low  : 1e-5
@@ -98,13 +112,10 @@ drop_path_rate:
   low  : 0.0
   high : 1.0
   step : 0.1
-  
+
 # Kernerl size parameter
 kernel_size:
   name : kernel_size
   type : int
   low  : 1
   high : 5
-  
-  
- 
