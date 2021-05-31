@@ -17,7 +17,6 @@ from src.utils.common import get_label_counts, read_yaml
 from src.utils.macs import calc_macs
 
 
-
 def suggest_from_config(trial, config_dict, name, idx=''):
     par = config_dict[name]
     if par['type'] == 'categorical':
@@ -52,7 +51,7 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     """
     
     # Sample Normal Cell(NC)
-    num_cells = optuna_config['num_cells']
+    num_cells = base_config['num_cells']
     n_nc = num_cells['value'] 
 
     low, high = num_cells['low'], num_cells['high']
@@ -61,7 +60,7 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     ncx = [[] for _ in range(n_nc)]
     ncx_args = [[] for _ in range(n_nc)]
     for i in range(n_nc):
-        nc = suggest_from_config(trial, optuna_config, 'normal_cells', idx=i)
+        nc = suggest_from_config(trial, base_config, 'normal_cells', idx=i)
         nc_config = module_config['normal_cells'][nc]
 
         nc_args = []
@@ -78,7 +77,7 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     rcx = [[] for _ in range(n_rc)]
     rcx_args = [[] for _ in range(n_rc)]
     for i in range(n_rc):
-        rc = suggest_from_config(trial, optuna_config, 'reduction_cells', idx=i)
+        rc = suggest_from_config(trial, base_config, 'reduction_cells', idx=i)
         rc_config = module_config['reduction_cells'][rc]
 
         rc_args = []
@@ -97,8 +96,6 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
         "backbone": []
         }
 
-    # model_config["backbone"] = [[[nx[i], ncx[i], ncx_args[i]], \
-    #                              [1,     rcx[i], rcx_args[i]]] for i in range(n_rc)]
 
     model_config["backbone"] = []
     for i in range(n_rc):
@@ -108,12 +105,12 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     model_config["backbone"].append([1, "GlobalAvgPool", []])
     model_config["backbone"].append([1, "Flatten", []])
     model_config["backbone"].append([1, "Linear", [10]])
-    
-    # save model dict to .yaml file (dict -> yaml)
-    model_fn = f"{model_fn_base}_{trial.number}.yaml"
-    with open(os.path.join(model_dir, model_fn), "w") as f:
-        yaml.dump(model_config, f, default_flow_style=False)
 
+    # save model dict to .yaml file
+    config_fn = f"{save_config_fn_base}_{trial.number}.yaml"
+    with open(os.path.join(save_config_dir, config_fn), "w") as f:
+        yaml.dump(save_config_dir, f, default_flow_style=False)
+    
     return model_config
 
 
@@ -122,32 +119,51 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Sampled hyperparam configs.
     """
-    # epochs = suggest_from_config(trial, optuna_config, 'epochs')
-    # epochs = optuna_config['epochs']['value']  # epochs 고정
-    epochs = 1
-
-    batch_size = suggest_from_config(trial, optuna_config, 'batch_size')
-
-    max_lr = suggest_from_config(trial, optuna_config, 'max_learning_rate')
+    epochs = suggest_from_config(trial, base_config, 'epochs')
+    batch_size = suggest_from_config(trial, base_config, 'batch_size')
+    max_lr = suggest_from_config(trial, base_config, 'max_learning_rate')
 
     # Sample optimizer
-    optimizer = suggest_from_config(trial, optuna_config, 'optimizer')
+    optimizer = suggest_from_config(trial, base_config, 'optimizer')
 
+    optimizer_args = []
+    lr = suggest_from_config(trial, optimizer_config[optimizer], 'lr')
+    if optimizer == 'Adam':
+        beta1 = suggest_from_config(trial, optimizer_config[optimizer], 'beta1')
+        beta2 = suggest_from_config(trial, optimizer_config[optimizer], 'beta2')
+        betas = (beta1, beta2)
+        optimizer_args = [betas]
+        
+    elif optimizer == 'AdamW':
+        beta1 = suggest_from_config(trial, optimizer_config[optimizer], 'beta1')
+        beta2 = suggest_from_config(trial, optimizer_config[optimizer], 'beta2')
+        betas = (beta1, beta2)
+        eps = suggest_from_config(trial, optimizer_config[optimizer], 'eps')
+        weight_decay = suggest_from_config(trial, optimizer_config[optimizer], 'weight_decay')
+        amsgrad = suggest_from_config(trial, optimizer_config[optimizer], 'amsgrad')
+        optimizer_args = [betas, eps, weight_decay, amsgrad]
 
-    # for arg, value in optimizer_config[optimizer].items():  ## 수정필요
-    #     optimizer_args[arg] = suggest_from_config(trial, optimizer_config[optimizer], arg)
-    lr = optimizer_config[optimizer]['lr']['value']
+    elif optimizer == 'SGD':
+        pass
+
     
+    img_size = suggest_from_config(trial, base_config, 'img_size')
+    data_config['IMG_SIZE'] = img_size
+
     hyperparam_config = {
         "epochs": epochs,
         "batch_size": batch_size,
         "max_lr": max_lr,
         "optimizer": optimizer,
-        # "optimizer_args": optimizer_args,
+        "optimizer_args": optimizer_args,
         "lr": lr,
+        "img_size": img_size
     }
 
-    data_config['IMG_SIZE'] = suggest_from_config(trial, optuna_config, 'img_size')
+    # save hyper-parameter dict to .yaml file (dict -> yaml)
+    hyperpraam_config_fn = f"{save_config_fn_base}_{trial.number}_hyperparameter.yaml"
+    with open(os.path.join(save_config_dir, hyperpraam_config_fn), "w") as f:
+        yaml.dump(hyperparam_config, f, default_flow_style=False)
 
     return hyperparam_config
 
@@ -158,7 +174,7 @@ def train_model(
     ) -> nn.Module:
     """Create trainer and train.
     Args:
-        model_config: Torch model to be trained.
+        save_config_dir: Torch model to be trained.
         hyperparams: Hyperparams for training
             (e.g. optimizer, lr, batch_size, ...)
     Returns:
@@ -169,7 +185,7 @@ def train_model(
     
     # Create optimizer, scheduler, criterion
     optimizer = getattr(optim, hyperparams["optimizer"])(
-        model_instance.model.parameters(), lr=hyperparams["lr"]
+        model_instance.model.parameters(), hyperparams["lr"], *hyperparams["optimizer_args"]
     )
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer=optimizer,
@@ -199,7 +215,7 @@ def train_model(
         scheduler=scheduler,
         scaler=scaler,
         device=device,
-        # model_path=model_path,
+        model_path=save_model_path,
         verbose=1,
         global_best_f1=global_best_f1
     )
@@ -237,6 +253,7 @@ def objective(trial: optuna.trial.Trial) -> float:
 
 
 if __name__ == '__main__':
+    # Setting directory and file name
     model_dir = "configs/model"  # model configs dir
     model_fn_base = "optuna_model_" + datetime.now().strftime('%m%d_%H%M')   # model configs file name
     log_dir = os.path.join("optuna_exp", datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
@@ -253,9 +270,11 @@ if __name__ == '__main__':
 
     train_dl, val_dl, test_dl = create_dataloader(data_config)
 
+    # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
     study.optimize(objective, n_trials=1)
 
+    # Visualization
     fig = optuna.visualization.plot_optimization_history(study, target=["best_f1", "macs"], target_name=["best_f1", "macs"])
     visualization_dir = '/opt/ml/code/visualization_result'
     fig.write_html(os.path.join(visualization_dir, f"{model_fn_base}_optimization_history.html"))
