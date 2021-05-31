@@ -1,0 +1,25 @@
+input_channel: 3
+
+depth_multiple: 1.0
+width_multiple: 1.0
+
+backbone:
+    # [repeat, module, args]
+    # Fire args : squeeze_inplanes, expand1x1_planes, expand3x3_planes
+    [
+        [1, Conv, [96, 7, 2, [0]]],
+        [1, MaxPool, [3, 2, 0]],
+        [1, Fire, [16, 64, 64]],
+        [1, Fire, [16, 64, 64]],
+        [1, Fire, [32, 128, 128]],
+        [1, MaxPool, [3, 2, 0]],
+        [1, Fire, [32, 128, 128]],
+        [1, Fire, [48, 192, 192]],
+        [1, Fire, [48, 192, 192]],
+        [1, Fire, [64, 256, 256]],
+        [1, MaxPool, [3, 2, 0]],
+        [1, Fire, [64, 256, 256]],
+        [1, Dropout, [0.5]],
+        [1, FixedConv, [1000, 1, 1]],
+        [1, GlobalAvgPool, []],
+    ]

@@ -20,6 +20,8 @@ from src.modules.poolings import (
     GlobalAvgPoolGenerator,
     MaxPoolGenerator,
 )
+from src.modules.fire import Fire, FireGenerator
+from src.modules.dropout import Dropout, DropoutGenerator
 
 __all__ = [
     "ModuleGenerator",
@@ -31,6 +33,8 @@ __all__ = [
     "GlobalAvgPool",
     "InvertedResidualv2",
     "InvertedResidualv3",
+    "Fire",
+    "Dropout",
     "BottleneckGenerator",
     "FixedConvGenerator",
     "ConvGenerator",
@@ -42,4 +46,6 @@ __all__ = [
     "GlobalAvgPoolGenerator",
     "InvertedResidualv2Generator",
     "InvertedResidualv3Generator",
+    "FireGenerator",
+    "DropoutGenerator"
 ]
