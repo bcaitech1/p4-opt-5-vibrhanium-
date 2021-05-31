@@ -18,16 +18,16 @@ from src.utils.macs import calc_macs
 
 
 
-def suggest_from_config(trial, config_dict, name):
+def suggest_from_config(trial, config_dict, name, idx=''):
     par = config_dict[name]
     if par['type'] == 'categorical':
         return trial.suggest_categorical (
-                                  name    = str  ( par [ 'name'    ] ) ,
+                                  name    = str  ( par [ 'name'    ] ) + str(idx) ,
                                   choices = list ( par [ 'choices' ] ) ,
                                 )
     elif par['type'] == 'float':
         return trial.suggest_float (
-                            name = str   ( par [ 'name' ] ) ,
+                            name = str   ( par [ 'name' ] ) + str(idx) ,
                             low  = float ( par [ 'low'  ] ) ,
                             high = float ( par [ 'high' ] ) ,
                             step = float ( par [ 'step' ] ) if par.get('step') else None  ,
@@ -35,7 +35,7 @@ def suggest_from_config(trial, config_dict, name):
                           )
     elif par['type'] == 'int':
         return trial.suggest_int (
-                          name = str   ( par [ 'name' ] ) ,
+                          name = str   ( par [ 'name' ] ) + str(idx) ,
                           low  = float ( par [ 'low'  ] ) ,
                           high = float ( par [ 'high' ] ) ,
                           step = float ( par [ 'step' ] ) if par.get('step') else 1     ,
@@ -44,7 +44,8 @@ def suggest_from_config(trial, config_dict, name):
     else:
         raise ValueError ('Trial suggestion not implemented.')
 
-def search_model(trial):  # optuna.trial.Trial) -> Dict[str, Any]:
+
+def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     """Search model structure from user-specified search space.
     Returns:
         Dict[str, Any]: Sampled model architecture config.
@@ -55,42 +56,39 @@ def search_model(trial):  # optuna.trial.Trial) -> Dict[str, Any]:
     n_nc = num_cells['value'] 
 
     low, high = num_cells['low'], num_cells['high']
-    ncx_layer = [trial.suggest_int(name=f"n{i}_repeat", low=low*(i), high=high*(i) for i in range(1,n_nc+1))]
+    nx = [trial.suggest_int(name=f"n{i}_repeat", low=low*(i), high=high*(i)) for i in range(1,n_nc+1)]
     
-    ncx = [[] for _ in range(n_nc)]  # [[], [], []]
+    ncx = [[] for _ in range(n_nc)]
     ncx_args = [[] for _ in range(n_nc)]
-    
     for i in range(n_nc):
-        nc = "Conv"  # suggest_from_config
-        nc_config = modules_config['normal_cell'][nc]
+        nc = suggest_from_config(trial, optuna_config, 'normal_cells', idx=i)
+        nc_config = module_config['normal_cells'][nc]
 
         nc_args = []
         for arg, value in nc_config.items():
             if isinstance(value, dict):
-                nc_args.append(suggest_from_config(trial, nc_config, arg))
+                nc_args.append(suggest_from_config(trial, nc_config, arg, idx=i))
             else:
                 nc_args.append(value)
+        ncx[i] = nc
         ncx_args[i] = nc_args
-        
-    # ncx_args
 
-    # reduction cell
-    n_rc = 1
+    # Sample Reduction Cell(RC)
+    n_rc = n_nc-1
+    rcx = [[] for _ in range(n_rc)]
     rcx_args = [[] for _ in range(n_rc)]
-
     for i in range(n_rc):
-        rc = "InvertedResidualv3"  # suggest_from_config
-        rc_config = modules_config['reduction_cell'][rc]
+        rc = suggest_from_config(trial, optuna_config, 'reduction_cells', idx=i)
+        rc_config = module_config['reduction_cells'][rc]
 
         rc_args = []
         for arg, value in rc_config.items():
             if isinstance(value, dict):
-                rc_args.append(suggest_from_config(trial, rc_config, arg))
+                rc_args.append(suggest_from_config(trial, rc_config, arg, idx=i))
             else:
                 rc_args.append(value)
+        rcx[i] = rc
         rcx_args[i] = rc_args
-    
-    # rcx_args
         
     model_config = {
         "input_channel": 3,
@@ -98,16 +96,19 @@ def search_model(trial):  # optuna.trial.Trial) -> Dict[str, Any]:
         "width_multiple": 1.0,
         "backbone": []
         }
-    
-    model_config["backbone"].append([n1, nc1, nc1_args])
-    model_config["backbone"].append([1, rc1, rc1_args])
-    model_config["backbone"].append([n2, nc2, nc2_args])
-    model_config["backbone"].append([1, rc2, rc2_args])
-    model_config["backbone"].append([n3, nc3, nc3_args])
+
+    # model_config["backbone"] = [[[nx[i], ncx[i], ncx_args[i]], \
+    #                              [1,     rcx[i], rcx_args[i]]] for i in range(n_rc)]
+
+    model_config["backbone"] = []
+    for i in range(n_rc):
+        model_config["backbone"].append([nx[i], ncx[i], ncx_args[i]])
+        model_config["backbone"].append([1,     rcx[i], rcx_args[i]])
+    model_config["backbone"].append([nx[-1], ncx[-1], ncx_args[-1]])
     model_config["backbone"].append([1, "GlobalAvgPool", []])
     model_config["backbone"].append([1, "Flatten", []])
     model_config["backbone"].append([1, "Linear", [10]])
-
+    
     # save model dict to .yaml file (dict -> yaml)
     model_fn = f"{model_fn_base}_{trial.number}.yaml"
     with open(os.path.join(model_dir, model_fn), "w") as f:
@@ -121,36 +122,27 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Sampled hyperparam configs.
     """
-    # epochs = trial.suggest_int("epochs", 10, 30, step=10)
-    epochs = suggest_from_config(trial, optuna_config, 'epochs')
-    batch_size = suggest_from_config(trial, optuna_config, 'batch_size')
-    lr = suggest_from_config(trial, optuna_config, 'learning_rate')
+    # epochs = suggest_from_config(trial, optuna_config, 'epochs')
+    # epochs = optuna_config['epochs']['value']  # epochs 고정
+    epochs = 1
+
+    # batch_size = suggest_from_config(trial, optuna_config, 'batch_size')
+    batch_size = optuna_config['batch_size']['value']  # batch_size 고정
 
     # Sample optimizer
-    optimizer = suggest_from_config(trial, optuna_config, 'optimizer')
+    # optimizer = suggest_from_config(trial, optuna_config, 'optimizer')
+    optimizer = optuna_config['optimizer']['value']  # optimizer 고정
 
-    # Optimizer args are conditional! ##### 수정 필요
-    if optimizer == "Adam":
-        # More aggressive lr!
-        lr = suggest_from_config(trial, optimizer['Adam'], 'lr') ##### 수정 필요
-
-        # Adam only params
-        beta1 = suggest_from_config(trial, optimizer['Adam'], 'beta1')
-        beta2 = suggest_from_config(trial, optimizer['Adam'], 'beta2')
+    optimizer_args = {}
+    # for arg, value in optimizer_config[optimizer].items():
+    #     optimizer_args[arg] = suggest_from_config(trial, optimizer_config[optimizer], arg)
+    for arg, value in optimizer_config[optimizer].items():  # optimizer argments 고정
+        if 'value' in value:
+            optimizer_args[arg] = value['value']
     
-        optimizer_args = [(beta1, beta2)]
-
-    elif optimizer == "SGD":
-        pass
-    elif optimizer == "Adagrad":
-        pass  
-    elif optimizer == "AdamW":
-        pass
-
     hyperparam_config = {
         "epochs": epochs,
         "batch_size": batch_size,
-        "lr": lr,
         "optimizer": optimizer,
         "optimizer_args": optimizer_args,
     }
@@ -175,7 +167,7 @@ def train_model(
     
     # Create optimizer, scheduler, criterion
     optimizer = getattr(optim, hyperparams["optimizer"])(
-        model_instance.model.parameters(), hyperparams["lr"], *hyperparams["optimizer_args"]
+        model_instance.model.parameters(), *hyperparams["optimizer_args"]
     )
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer=optimizer,
@@ -251,15 +243,20 @@ if __name__ == '__main__':
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     global_best_f1 = 0  # 모든 trial 중 best f1, save_model에 사용
 
-    # Create dataloader
-    data_config = read_yaml('configs/data/taco.yaml')  # Hard cording
-    optuna_config = read_yaml('./Special Mission/optuna_config.yaml')
+    # Create config file
+    data_config = read_yaml('configs/data/taco.yaml')
+    optuna_config = read_yaml('configs/model/optuna_config.yaml')
+    module_config = read_yaml('configs/model/module_config.yaml')
+    optimizer_config = read_yaml('configs/model/optimizer_config.yaml')
 
     train_dl, val_dl, test_dl = create_dataloader(data_config)
 
     study = optuna.create_study(directions=["maximize", "minimize"])
-    study.optimize(objective, n_trials=2)
+    study.optimize(objective, n_trials=1)
 
-    fig = optuna.visualization.plot_optimization_history(study)
+    fig = optuna.visualization.plot_optimization_history(study, target=["best_f1", "macs"], target_name=["best_f1", "macs"])
     visualization_dir = '/opt/ml/code/visualization_result'
-    fig.write_html(os.path.join(visualization_dir, f"{model_fn_base}.html"))
+    fig.write_html(os.path.join(visualization_dir, f"{model_fn_base}_optimization_history.html"))
+
+    fig = optuna.visualization.plot_pareto_front(study)
+    fig.write_html(os.path.join(visualization_dir, f"{model_fn_base}_pareto_front.html"))
