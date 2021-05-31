@@ -1,0 +1,195 @@
+# # basic model config
+# model_config:
+#   input_channel: 3,
+#   depth_multiple: 1.0,
+#   width_multiple: 1.0,
+#   backbone: []
+
+# Normal Cell
+normal_cells:
+  stride  : 1
+
+  # Conv
+  # [out_channels, kernel_size, stride, padding, groups, activation]
+  Conv:
+    out_channels :
+      name  : out_channels
+      type  : int
+      low   : 3
+      high  : 5
+
+    kernel_size : 
+      name  : kernel_size
+      type  : int
+      low   : 3
+      high  : 5
+      step  : 2 
+
+    stride  : 1
+
+    padding : null  # auto padding
+    
+    groups  : 1
+
+    activation:
+      name    : activation
+      type    : categorical
+      choices  :
+            - ReLU
+            - ReLU6
+            - Hardswish
+
+  # DWConv
+  # [out_channels, kernel_size, stride, padding, activation]
+  DWConv:
+    out_channels :
+      name  : out_channels
+      type  : int
+      low   : 3
+      high  : 5
+
+    kernel_size : 
+      name  : kernel_size
+      type  : int
+      low   : 3
+      high  : 5
+      step  : 2 
+
+    stride  : 1
+
+    padding : null  # auto padding
+
+    activation:
+      name    : activation
+      type    : categorical
+      choices  :
+            - ReLU
+            - ReLU6
+            - Hardswish
+
+
+  # Bottleneck
+  # [out_channels, shortcut, groups, expansion, activation]
+  Bottleneck:
+    out_channels :
+      name  : out_channels
+      type  : int
+      low   : 3
+      high  : 5
+
+    shortcut : 
+      name  : shortcut
+      type  : int
+      low   : 0  # False
+      high  : 1  # True
+
+    groups  : 1
+
+    expansion:
+      name  : expansion
+      type  : int
+      low   : 1
+      high  : 3
+
+    activation:
+      name    : activation
+      type    : categorical
+      choices  :
+            - ReLU
+            - ReLU6
+            - Hardswish
+
+
+  # InvertedResidualv2
+  # [out_channels, out_channels, stride]
+  InvertedResidualv2:
+    out_channels  :
+      name  : out_channels
+      type  : int
+      low   : 3
+      high  : 5
+      
+    expand_ratio  : 0.5
+
+    stride  : 1
+  
+
+# Reduction cell
+reduction_cells:
+
+  # InvertedResidualv2
+  # [out_channels, out_channels, stride]
+  InvertedResidualv2:
+    out_channels  :
+      name  : out_channels
+      type  : int
+      low   : 3
+      high  : 5
+      
+    expand_ratio  : 0.5
+
+    stride  : 2
+    
+  # InvertedResidualv3
+  # [kernel_size, expansion, out_channels, use_se, use_hs, stride]
+  InvertedResidualv3:
+    kernel_size : 
+      name  : kernel_size
+      type  : int
+      low   : 3
+      high  : 5
+      step  : 2 
+
+    expansion :
+      name  : expansion
+      type  : int
+      low   : 1
+      high  : 3
+
+    out_channels  :
+      name  : out_channels
+      type  : int
+      low   : 3
+      high  : 5
+
+    use_se  : 
+      name  : use_se
+      type  : int
+      low   : 0  # False
+      high  : 1  # True
+    
+    use_hs  : 
+      name  : use_hs
+      type  : int
+      low   : 0  # False
+      high  : 1  # True
+
+    stride  : 2
+
+  # MaxPool
+  # [kernel_size, stride, padding]
+  MaxPool:
+    kernel_size : 
+      name  : kernel_size
+      type  : int
+      low   : 3
+      high  : 5
+      step  : 2 
+
+    stride  : 2
+
+    padding : 0
+
+  # AvgPool
+  # [kernel_size, stride, padding]
+  AvgPool:
+    kernel_size : 
+      name  : kernel_size
+      type  : int
+      low   : 3
+      high  : 5
+      step  : 2 
+
+    stride  : 2
+
+    padding : 0
