@@ -126,25 +126,13 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
     # Sample optimizer
     optimizer = suggest_from_config(trial, base_config, 'optimizer')
 
-    optimizer_args = []
-    lr = suggest_from_config(trial, optimizer_config[optimizer], 'lr')
-    if optimizer == 'Adam':
-        beta1 = suggest_from_config(trial, optimizer_config[optimizer], 'beta1')
-        beta2 = suggest_from_config(trial, optimizer_config[optimizer], 'beta2')
-        betas = (beta1, beta2)
-        optimizer_args = [betas]
-        
-    elif optimizer == 'AdamW':
-        beta1 = suggest_from_config(trial, optimizer_config[optimizer], 'beta1')
-        beta2 = suggest_from_config(trial, optimizer_config[optimizer], 'beta2')
-        betas = (beta1, beta2)
-        eps = suggest_from_config(trial, optimizer_config[optimizer], 'eps')
-        weight_decay = suggest_from_config(trial, optimizer_config[optimizer], 'weight_decay')
-        amsgrad = suggest_from_config(trial, optimizer_config[optimizer], 'amsgrad')
-        optimizer_args = [betas, eps, weight_decay, amsgrad]
-
-    elif optimizer == 'SGD':
-        pass
+    optimizer_args = {}
+    for args, value in optimizer_config[optimizer].items():
+        optimizer_args[args] = suggest_from_config(trial, optimizer_config[optimizer], args)
+        if args == 'beta2':
+            optimizer_args['betas'] = (optimizer_args['beta1'], optimizer_args['beta2'])
+            del optimizer_args['beta1']
+            del optimizer_args['beta2']
 
     
     img_size = suggest_from_config(trial, base_config, 'img_size')
@@ -156,7 +144,7 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
         "max_lr": max_lr,
         "optimizer": optimizer,
         "optimizer_args": optimizer_args,
-        "lr": lr,
+        # "lr": lr,
         "img_size": img_size
     }
 
@@ -185,7 +173,7 @@ def train_model(
     
     # Create optimizer, scheduler, criterion
     optimizer = getattr(optim, hyperparams["optimizer"])(
-        model_instance.model.parameters(), hyperparams["lr"], *hyperparams["optimizer_args"]
+        model_instance.model.parameters(), **hyperparams["optimizer_args"]
     )
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer=optimizer,
@@ -254,30 +242,30 @@ def objective(trial: optuna.trial.Trial) -> float:
 
 if __name__ == '__main__':
     # Setting directory and file name
-    model_dir = "configs/model"  # model configs dir
-    model_fn_base = "optuna_model_" + datetime.now().strftime('%m%d_%H%M')   # model configs file name
-    log_dir = os.path.join("optuna_exp", datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-    model_path = os.path.join(log_dir, "best.pt")  # file path will be saved model's weight
+    cur_time = datetime.now().strftime('%m%d_%H%M')
+    save_config_dir = "configs/optuna_model"    # model configs dir
+    save_config_fn_base = cur_time              # model configs file name
+
+    save_model_dir = "optuna_exp"               # model weight dir
+    save_model_path = os.path.join(save_model_dir, f"{cur_time}_best.pt")  # model weight file path
+    global_best_f1 = 0  # 모든 trial 중 best f1, save_model에 사용 (임시)
+
+    save_visualization_dir = 'visualization_result'
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    global_best_f1 = 0  # 모든 trial 중 best f1, save_model에 사용
-
+    
     # Create config file
     data_config = read_yaml('configs/data/taco.yaml')
-    optuna_config = read_yaml('configs/model/optuna_config.yaml')
-    module_config = read_yaml('configs/model/module_config.yaml')
-    optimizer_config = read_yaml('configs/model/optimizer_config.yaml')
+    base_config = read_yaml('configs/optuna_config/base_config.yaml')
+    module_config = read_yaml('configs/optuna_config/module_config.yaml')
+    optimizer_config = read_yaml('configs/optuna_config/optimizer_config.yaml')
 
     train_dl, val_dl, test_dl = create_dataloader(data_config)
 
-    # Optuna study
+    # Oputna study
     study = optuna.create_study(directions=["maximize", "minimize"])
-    study.optimize(objective, n_trials=1)
+    study.optimize(objective, n_trials=100)
 
     # Visualization
-    fig = optuna.visualization.plot_optimization_history(study, target=["best_f1", "macs"], target_name=["best_f1", "macs"])
-    visualization_dir = '/opt/ml/code/visualization_result'
-    fig.write_html(os.path.join(visualization_dir, f"{model_fn_base}_optimization_history.html"))
-
     fig = optuna.visualization.plot_pareto_front(study)
-    fig.write_html(os.path.join(visualization_dir, f"{model_fn_base}_pareto_front.html"))
+    fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}.html"))
