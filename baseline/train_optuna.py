@@ -126,26 +126,28 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
     # epochs = optuna_config['epochs']['value']  # epochs 고정
     epochs = 1
 
-    # batch_size = suggest_from_config(trial, optuna_config, 'batch_size')
-    batch_size = optuna_config['batch_size']['value']  # batch_size 고정
+    batch_size = suggest_from_config(trial, optuna_config, 'batch_size')
+
+    max_lr = suggest_from_config(trial, optuna_config, 'max_learning_rate')
 
     # Sample optimizer
-    # optimizer = suggest_from_config(trial, optuna_config, 'optimizer')
-    optimizer = optuna_config['optimizer']['value']  # optimizer 고정
+    optimizer = suggest_from_config(trial, optuna_config, 'optimizer')
 
-    optimizer_args = {}
-    # for arg, value in optimizer_config[optimizer].items():
+
+    # for arg, value in optimizer_config[optimizer].items():  ## 수정필요
     #     optimizer_args[arg] = suggest_from_config(trial, optimizer_config[optimizer], arg)
-    for arg, value in optimizer_config[optimizer].items():  # optimizer argments 고정
-        if 'value' in value:
-            optimizer_args[arg] = value['value']
+    lr = optimizer_config[optimizer]['lr']['value']
     
     hyperparam_config = {
         "epochs": epochs,
         "batch_size": batch_size,
+        "max_lr": max_lr,
         "optimizer": optimizer,
-        "optimizer_args": optimizer_args,
+        # "optimizer_args": optimizer_args,
+        "lr": lr,
     }
+
+    data_config['IMG_SIZE'] = suggest_from_config(trial, optuna_config, 'img_size')
 
     return hyperparam_config
 
@@ -167,11 +169,11 @@ def train_model(
     
     # Create optimizer, scheduler, criterion
     optimizer = getattr(optim, hyperparams["optimizer"])(
-        model_instance.model.parameters(), *hyperparams["optimizer_args"]
+        model_instance.model.parameters(), lr=hyperparams["lr"]
     )
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer=optimizer,
-        max_lr=hyperparams["lr"],
+        max_lr=hyperparams["max_lr"],
         steps_per_epoch=len(train_dl),
         epochs=hyperparams["epochs"],
         pct_start=0.05,
