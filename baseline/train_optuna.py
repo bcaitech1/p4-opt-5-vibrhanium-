@@ -17,32 +17,46 @@ from src.utils.common import get_label_counts, read_yaml
 from src.utils.macs import calc_macs
 
 
-model_dir = "configs/model"  # model configs dir
-model_fn_base = "optuna_model_" + datetime.now().strftime('%m%d_%H%M')   # model configs file name
-log_dir = os.path.join("optuna_exp", datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-model_path = os.path.join(log_dir, "best.pt")  # file path will be saved model's weight
 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-global_best_f1 = 0  # 모든 trial 중 best f1, save_model에 사용
-
-# Create dataloader
-data_config = read_yaml('configs/data/taco.yaml')  # Hard cording
-train_dl, val_dl, test_dl = create_dataloader(data_config)
-
+def suggest_from_config(trial, config_dict, name):
+    par = config_dict[name]
+    if par['type'] == 'categorical':
+        return trial.suggest_categorical (
+                                  name    = str  ( par [ 'name'    ] ) ,
+                                  choices = list ( par [ 'choices' ] ) ,
+                                )
+    elif par['type'] == 'float':
+        return trial.suggest_float (
+                            name = str   ( par [ 'name' ] ) ,
+                            low  = float ( par [ 'low'  ] ) ,
+                            high = float ( par [ 'high' ] ) ,
+                            step = float ( par [ 'step' ] ) if par.get('step') else None  ,
+                            log  = bool  ( par [ 'log'  ] ) if par.get('log') else False ,
+                          )
+    elif par['type'] == 'int':
+        return trial.suggest_int (
+                          name = str   ( par [ 'name' ] ) ,
+                          low  = float ( par [ 'low'  ] ) ,
+                          high = float ( par [ 'high' ] ) ,
+                          step = float ( par [ 'step' ] ) if par.get('step') else 1     ,
+                          log  = bool  ( par [ 'log'  ] ) if par.get('log') else False ,
+                        )
+    else:
+        raise ValueError ('Trial suggestion not implemented.')
 
 def search_model(trial):  # optuna.trial.Trial) -> Dict[str, Any]:
     """Search model structure from user-specified search space.
-
     Returns:
         Dict[str, Any]: Sampled model architecture config.
     """
-    # Sample N
-    n1 = trial.suggest_int(name="n1_repeat", low=1, high=2)
-    n2 = trial.suggest_int(name="n2_repeat", low=n1, high=3)
-    n3 = trial.suggest_int(name="n3_repeat", low=n2, high=3)
-
+    
     # Sample Normal Cell(NC)
-    n_nc = 3
+    num_cells = optuna_config['num_cells']
+    n_nc = num_cells['value'] 
+
+    low, high = num_cells['low'], num_cells['high']
+    ncx_layer = [trial.suggest_int(name=f"n{i}_repeat", low=low*(i), high=high*(i) for i in range(1,n_nc+1))]
+    
     ncx = [[] for _ in range(n_nc)]  # [[], [], []]
     ncx_args = [[] for _ in range(n_nc)]
     for i in range(n_nc):
@@ -182,30 +196,25 @@ def search_model(trial):  # optuna.trial.Trial) -> Dict[str, Any]:
 
 def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
     """Search hyperparameter from user-specified search space.
-
     Returns:
         Dict[str, Any]: Sampled hyperparam configs.
     """
     # epochs = trial.suggest_int("epochs", 10, 30, step=10)
-    epochs = 1
-    batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
-    lr = trial.suggest_float("lr", 1e-5, 1e-3)
+    epochs = suggest_from_config(trial, optuna_config, 'epochs')
+    batch_size = suggest_from_config(trial, optuna_config, 'batch_size')
+    lr = suggest_from_config(trial, optuna_config, 'learning_rate')
 
     # Sample optimizer
-    optimizer = trial.suggest_categorical(
-        "optimizer",
-        # ["Adam", "SGD", "Adagrad", "AdamW"]
-        ["Adam"]
-    )
+    optimizer = suggest_from_config(trial, optuna_config, 'optimizer')
 
-    # Optimizer args are conditional!
+    # Optimizer args are conditional! ##### 수정 필요
     if optimizer == "Adam":
         # More aggressive lr!
-        lr = trial.suggest_float("lr", 1e-5, 1e-3)
+        lr = suggest_from_config(trial, optimizer['Adam'], 'lr') ##### 수정 필요
 
         # Adam only params
-        beta1 = trial.suggest_float("beta1", 0.8, 0.95)
-        beta2 = trial.suggest_float("beta2", 0.9, 0.9999)
+        beta1 = suggest_from_config(trial, optimizer['Adam'], 'beta1')
+        beta2 = suggest_from_config(trial, optimizer['Adam'], 'beta2')
     
         optimizer_args = [(beta1, beta2)]
 
@@ -232,12 +241,10 @@ def train_model(
     hyperparams: Dict[str, Any]
     ) -> nn.Module:
     """Create trainer and train.
-
     Args:
         model_config: Torch model to be trained.
         hyperparams: Hyperparams for training
             (e.g. optimizer, lr, batch_size, ...)
-
     Returns:
         nn.Module: Trained torch model.
     """
@@ -314,6 +321,20 @@ def objective(trial: optuna.trial.Trial) -> float:
 
 
 if __name__ == '__main__':
+    model_dir = "configs/model"  # model configs dir
+    model_fn_base = "optuna_model_" + datetime.now().strftime('%m%d_%H%M')   # model configs file name
+    log_dir = os.path.join("optuna_exp", datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    model_path = os.path.join(log_dir, "best.pt")  # file path will be saved model's weight
+
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    global_best_f1 = 0  # 모든 trial 중 best f1, save_model에 사용
+
+    # Create dataloader
+    data_config = read_yaml('configs/data/taco.yaml')  # Hard cording
+    optuna_config = read_yaml('./Special Mission/optuna_config.yaml')
+
+    train_dl, val_dl, test_dl = create_dataloader(data_config)
+
     study = optuna.create_study(directions=["maximize", "minimize"])
     study.optimize(objective, n_trials=2)
 
