@@ -1,3 +1,50 @@
+# Sample Normal Cell (NC)
+num_cells:
+  name : num_cells
+  type : int
+  value: 3
+  low  : 1
+  high : 3
+ 
+# Normal Cells
+normal_cells:
+  name    : normal_cells
+  type    : categorical
+  choices :
+            - Conv
+            - DWConv
+            - Bottleneck
+            - InvertedResidualv2
+            
+# Reduction Cell
+normal_cells:
+  name    : normal_cells
+  type    : categorical
+  choices :
+            - InvertedResidualv2
+            - InvertedResidualv3
+            - MaxPool
+            - AvgPool
+
+
+# Batch size
+batch_size:
+  name    : batch_size
+  type    : categorical
+  choices :
+            - 16
+            - 32
+            - 64
+
+# Epochs
+epochs:
+  name : epochs
+  type : int
+  low  : 10
+  high : 30
+  step : 10
+
+
 # Categorical parameter
 optimizer:
   name    : optimizer
@@ -6,7 +53,7 @@ optimizer:
             - RMSprop
             - Adam
 
-# Integer parameter
+# Integer parameter - 
 num_layers:
   name : num_layers
   type : int
@@ -58,3 +105,6 @@ kernel_size:
   type : int
   low  : 1
   high : 5
+  
+  
+ 
