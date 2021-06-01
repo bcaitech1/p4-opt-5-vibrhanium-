@@ -7,8 +7,8 @@
 - 모듈 block(micro)는 탐색 ⭕
 - 모듈 block들의 조합 및 구성(macro) 탐색 ❌, 왼쪽 아래 구조(CIFAR10 Architecture)를 차용
 
-    ![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3980bc88-58e3-4fbd-9878-91df7502794e/Untitled.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3980bc88-58e3-4fbd-9878-91df7502794e/Untitled.png)
-    🖇️ [Learning Transferable Architectures for Scalable Image Recognition](https://arxiv.org/abs/1707.07012)
+    ![image](https://user-images.githubusercontent.com/71882533/120309048-babff480-c30f-11eb-98ec-847879388967.png)
+    <br/>🖇️ [Learning Transferable Architectures for Scalable Image Recognition](https://arxiv.org/abs/1707.07012)
 
 - 주의 사항: 모듈 block의 조합 및 구성 (macro)를 탐색하기 위해서는 추가적인 수정이 필요합니다.
 
