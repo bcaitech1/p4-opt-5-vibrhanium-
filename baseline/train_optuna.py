@@ -1,4 +1,5 @@
 import os
+import re
 import yaml
 from datetime import datetime
 from typing import Any, Dict, Tuple, Union
@@ -17,17 +18,57 @@ from src.trainer import TorchTrainer
 from src.utils.common import get_label_counts, read_yaml
 from src.utils.macs import calc_macs
 
+# Setting directory and file name
+cur_time = datetime.now().strftime('%m%d_%H%M')
 
-def suggest_from_config(trial, config_dict, name, idx=''):
-    par = config_dict[name]
+# for save best trials model config
+save_config_dir = "configs/optuna_model"
+save_config_fn_base = cur_time
+os.makedirs(save_config_dir, exist_ok=True)
+
+# for save best trials model weight
+save_model_dir = "optuna_exp"
+save_model_path = os.path.join(save_model_dir, f"{cur_time}_best.pt")
+os.makedirs(save_model_dir, exist_ok=True)
+
+# for save visualization html
+visualization_dir = '/opt/ml/code/visualization_result'
+os.makedirs(visualization_dir, exist_ok=True)
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+num_class = 9
+
+# Create config file
+data_config = read_yaml('configs/data/taco_sample.yaml')
+base_config = read_yaml('configs/optuna_config/base_config.yaml')
+module_config = read_yaml('configs/optuna_config/module_config.yaml') 
+optimizer_config = read_yaml('configs/optuna_config/optimizer_config.yaml') 
+scheduler_config = read_yaml('configs/optuna_config/scheduler_config.yaml') 
+
+def suggest_from_config(trial, config_dict, key, name=None):
+    """sugget value from config
+
+    Args:
+        trial (optuna.trial.Trial): optuna trial
+        config_dict (Dict[str, Any]): config dict from yaml file
+        key (str): key in config dict
+        name (str, optional): name argument in suggest function if name is None use key argument. Defaults to None.
+
+    Raises:
+        ValueError: raise when 'type' value of config_dict[key] is not 'categorical', 'float', or 'int'
+
+    Returns:
+        Any: suggested value
+    """    
+    par = config_dict[key]
     if par['type'] == 'categorical':
         return trial.suggest_categorical (
-                                  name    = str  ( par [ 'name'    ] ) + str(idx) ,
+                                  name    = name if name else key,
                                   choices = list ( par [ 'choices' ] ) ,
                                 )
     elif par['type'] == 'float':
         return trial.suggest_float (
-                            name = str   ( par [ 'name' ] ) + str(idx) ,
+                            name = name if name else key,
                             low  = float ( par [ 'low'  ] ) ,
                             high = float ( par [ 'high' ] ) ,
                             step = float ( par [ 'step' ] ) if par.get('step') else None  ,
@@ -35,7 +76,7 @@ def suggest_from_config(trial, config_dict, name, idx=''):
                           )
     elif par['type'] == 'int':
         return trial.suggest_int (
-                          name = str   ( par [ 'name' ] ) + str(idx) ,
+                          name = name if name else key,
                           low  = float ( par [ 'low'  ] ) ,
                           high = float ( par [ 'high' ] ) ,
                           step = float ( par [ 'step' ] ) if par.get('step') else 1     ,
@@ -54,10 +95,12 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     num_cells = base_config['num_cells']
     normal_cells = module_config['normal_cells']
     reduction_cells = module_config['reduction_cells']
-    model_config = {'input_channel': 3,
-  'depth_multiple': 1.0,
-  'width_multiple': 1.0,
-  'backbone': [],}
+    model_config = {
+        'input_channel': 3,
+        'depth_multiple': 1.0,
+        'width_multiple': 1.0,
+        'backbone': [],
+        }
     
     # Sample Normal Cell(NC)
     n_nc = num_cells['value'] 
@@ -69,13 +112,13 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     ncx = [[] for _ in range(n_nc)]
     ncx_args = [[] for _ in range(n_nc)]
     for i in range(n_nc):
-        nc = suggest_from_config(trial, base_config, 'normal_cells', idx=i)
+        nc = suggest_from_config(trial, base_config, 'normal_cells', f'normal_cells_{i}')
         nc_config = normal_cells[nc]
 
         nc_args = []
         for arg, value in nc_config.items(): #out_channel, {name:oc, type:int ... } | kernel_size, {asd}
             if isinstance(value, dict): 
-                nc_args.append(suggest_from_config(trial, nc_config, arg, idx=i))
+                nc_args.append(suggest_from_config(trial, nc_config, arg, f'normal_cells_{i}/{arg}'))
             else:
                 nc_args.append(value)
         ncx[i] = nc
@@ -86,13 +129,13 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     rcx = [[] for _ in range(n_rc)]
     rcx_args = [[] for _ in range(n_rc)]
     for i in range(n_rc):
-        rc = suggest_from_config(trial, base_config, 'reduction_cells', idx=i)
+        rc = suggest_from_config(trial, base_config, 'reduction_cells', f'reduction_cells_{i}')
         rc_config = reduction_cells[rc]
 
         rc_args = []
         for arg, value in rc_config.items():
             if isinstance(value, dict):
-                rc_args.append(suggest_from_config(trial, rc_config, arg, idx=i))
+                rc_args.append(suggest_from_config(trial, rc_config, arg, f'reduction_cells_{i}/{arg}'))
             else:
                 rc_args.append(value)
         rcx[i] = rc
@@ -131,7 +174,6 @@ def train_model(trial,
     # Sample optimizer
     optimizer_name = suggest_from_config(trial, base_config, 'optimizer') ## AdamW
     
-    # 좀 더 간단하게! 할 수 있을거야 #############
     opt_params = optimizer_config[optimizer_name].keys() #lr, beta1, beta2
     temp_dict = {}
     for p in opt_params: # lr, betas
@@ -149,7 +191,7 @@ def train_model(trial,
 
     optimizer = getattr(optim, optimizer_name)(
         model_instance.parameters(), **temp_dict
-    )  # dictionary unpacking
+    )
     
     # scheduler
     scheduler_name = suggest_from_config(trial, base_config, 'scheduler') ## CosineAnnealingLR
@@ -217,22 +259,87 @@ def objective(trial: optuna.trial.Trial) -> float:
     return best_f1, macs
 
 
+def make_model_config(best_trial, config_fn):
+    """make model config file
+
+    Args:
+        best_trial (Dict[str, Any]): best trial
+        config_fn (str): config file name
+    """
+    # Sample Normal Cell(NC)
+    num_cells = base_config['num_cells']
+    n_nc = num_cells['value']
+    model_config = {
+        'input_channel': 3,
+        'depth_multiple': 1.0,
+        'width_multiple': 1.0,
+        'backbone': None,
+        }
+
+    backbone = []
+    for i in range(n_nc):
+        if i == (n_nc-1):
+            cell_types = ['normal']
+        else:
+            cell_types = ['normal', 'reduction']
+            
+        # best_trial.params의 key 들 중 normal_cells_i 별로 추출
+        for cell_type in cell_types:
+            p = re.compile(f'{cell_type}_cells_{i}/')
+            matched_keys = []
+            for name in best_trial.params.keys():
+                if p.match(name):
+                    matched_keys.append(name)
+
+            # 찾은 key에 해당하는 값 추출
+            cell = [best_trial.params[f'n{i+1}_repeat'], best_trial.params[f'{cell_type}_cells_{i}']]
+            cell_args = []
+            for name in matched_keys:
+                cell_args.append(best_trial.params[name])
+            cell.append(cell_args)
+            backbone.append(cell)
+
+    model_config['backbone'] = backbone
+    model_config["backbone"].append([1, "GlobalAvgPool", []])
+    model_config["backbone"].append([1, "Flatten", []])
+    model_config["backbone"].append([1, "Linear", [num_class]])
+    
+    with open(os.path.join(save_config_dir, config_fn), "w") as f:
+        yaml.dump(model_config, f, default_flow_style=False)
+
+
+def make_hyperparam_config(best_trial, config_fn):
+    hyperparams = [
+        'epochs', 'batch_size', 'optimizer', 'lr', 
+        'betas', 'weight_decay', 'scheduler', 'T_max', 
+        'eta_min', 'last_epoch', 'criterion', 'img_size'
+        ]
+
+    hyperparams_config = {}
+    for key, value in best_trial.params.items():
+        if key in hyperparams:
+            hyperparams_config[key] = value
+
+    with open(os.path.join(save_config_dir, config_fn), "w") as f:
+        yaml.dump(hyperparams_config, f, default_flow_style=False)
+
+
 if __name__ == '__main__':
     # Setting directory and file name
     cur_time = datetime.now().strftime('%m%d_%H%M')
 
     # for save best trials model config
-    save_config_dir = "configs/optuna_model"
+    save_config_dir = "./configs/optuna_model"
     save_config_fn_base = cur_time
     os.makedirs(save_config_dir, exist_ok=True)
 
-    # for save model weight
-    save_model_dir = "optuna_exp"
+    # for save best trials model weight
+    save_model_dir = "./optuna_exp"
     save_model_path = os.path.join(save_model_dir, f"{cur_time}_best.pt")
     os.makedirs(save_model_dir, exist_ok=True)
     
     # for save visualization html
-    visualization_dir = '/opt/ml/code/visualization_result'
+    visualization_dir = "./visualization_result"
     os.makedirs(visualization_dir, exist_ok=True)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -247,13 +354,20 @@ if __name__ == '__main__':
 
     # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
-    study.optimize(objective, n_trials=3)
+    study.optimize(objective, n_trials=3)  ####### 여기 수정해서 사용 #######
 
     # Save best trials model architecture and hyper-parameter
+    want_parse = True
     for i, best_trial in enumerate(study.best_trials):
         config_fn = f"{save_config_fn_base}_best_trials{i}.yaml"
         with open(os.path.join(save_config_dir, config_fn), "w") as f:
             yaml.dump(best_trial.params, f, default_flow_style=False)
+
+        if want_parse:
+            config_fn = f"{save_config_fn_base}_best_trials{i}_model.yaml"
+            make_model_config(best_trial, config_fn)
+            config_fn = f"{save_config_fn_base}_best_trials{i}_hyperparam.yaml"
+            make_hyperparam_config(best_trial, config_fn)
 
     # Visualization
     fig = optuna.visualization.plot_pareto_front(study)
