@@ -1,7 +1,9 @@
-out_channels_low  : &out_channels_low   3
-out_channels_high : &out_channels_high  16
-kernel_size_low   : &kernel_size_low    3
-kernel_size_high  : &kernel_size_high   16
+# # basic model config
+# model_config:
+#   input_channel: 3,
+#   depth_multiple: 1.0,
+#   width_multiple: 1.0,
+#   backbone: []
 
 # Normal Cell
 normal_cells:
@@ -13,14 +15,14 @@ normal_cells:
     out_channels :
       name  : out_channels
       type  : int
-      low   : *out_channels_low
-      high  : *out_channels_high
+      low   : 3
+      high  : 5
 
     kernel_size : 
       name  : kernel_size
       type  : int
-      low   : *kernel_size_low
-      high  : *kernel_size_high
+      low   : 3
+      high  : 5
       step  : 2 
 
     stride  : 1
@@ -43,14 +45,14 @@ normal_cells:
     out_channels :
       name  : out_channels
       type  : int
-      low   : *out_channels_low
-      high  : *out_channels_high
+      low   : 3
+      high  : 5
 
     kernel_size : 
       name  : kernel_size
       type  : int
-      low   : *kernel_size_low
-      high  : *kernel_size_high
+      low   : 3
+      high  : 5
       step  : 2 
 
     stride  : 1
@@ -61,9 +63,10 @@ normal_cells:
       name    : activation
       type    : categorical
       choices  :
+            - ReLU
             - ReLU6
-            # - ReLU
-            # - Hardswish
+            - Hardswish
+
 
   # Bottleneck
   # [out_channels, shortcut, groups, expansion, activation]
@@ -71,8 +74,8 @@ normal_cells:
     out_channels :
       name  : out_channels
       type  : int
-      low   : *out_channels_low
-      high  : *out_channels_high
+      low   : 3
+      high  : 5
 
     shortcut : 
       name  : shortcut
@@ -103,8 +106,8 @@ normal_cells:
     out_channels  :
       name  : out_channels
       type  : int
-      low   : *out_channels_low
-      high  : *out_channels_high
+      low   : 3
+      high  : 5
       
     expand_ratio  : 0.5
 
@@ -120,8 +123,8 @@ reduction_cells:
     out_channels  :
       name  : out_channels
       type  : int
-      low   : *out_channels_low
-      high  : *out_channels_high
+      low   : 3
+      high  : 5
       
     expand_ratio  : 0.5
 
@@ -133,8 +136,8 @@ reduction_cells:
     kernel_size : 
       name  : kernel_size
       type  : int
-      low   : *kernel_size_low
-      high  : *kernel_size_high
+      low   : 3
+      high  : 5
       step  : 2 
 
     expansion :
@@ -146,8 +149,8 @@ reduction_cells:
     out_channels  :
       name  : out_channels
       type  : int
-      low   : *out_channels_low
-      high  : *out_channels_high
+      low   : 3
+      high  : 5
 
     use_se  : 
       name  : use_se
@@ -169,8 +172,8 @@ reduction_cells:
     kernel_size : 
       name  : kernel_size
       type  : int
-      low   : *kernel_size_low
-      high  : *kernel_size_high
+      low   : 3
+      high  : 5
       step  : 2 
 
     stride  : 2
@@ -183,9 +186,9 @@ reduction_cells:
     kernel_size : 
       name  : kernel_size
       type  : int
-      low   : *kernel_size_low
-      high  : *kernel_size_high
-      step  : 2
+      low   : 3
+      high  : 5
+      step  : 2 
 
     stride  : 2
 

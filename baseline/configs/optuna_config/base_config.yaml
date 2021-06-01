@@ -5,7 +5,7 @@ num_cells:
   value: 3
   low  : 1
   high : 3
- 
+
 # Normal Cells
 normal_cells:
   name    : normal_cells
@@ -31,25 +31,41 @@ batch_size:
   name    : batch_size
   type    : categorical
   choices :
+#             - 16
             - 32
+#             - 64
 
 # Epochs
 epochs:
   name : epochs
   type : int
-  low  : 30
-  high : 30
+  low  : 10
+  high : 10
   step : 10
 
-# Categorical parameter
+# Optimizer parameter
 optimizer:
-  value   : AdamW
   name    : optimizer
   type    : categorical
   choices : 
-            # - RMSprop
-            # - Adam
+#             - SGD
+#             - Adam
             - AdamW
+            
+# Scheduler parameter
+scheduler:
+  name    : scheduler
+  type    : categorical
+  choices : 
+#             - StepLR
+            - CosineAnnealingLR
+
+# Criterion parameter
+criterion:
+  name    : criterion
+  type    : categorical
+  choices :
+            - CrossEntropyLoss
 
 # Input image size
 img_size:
@@ -98,7 +114,6 @@ learning_rate:
 
 # Floating point parameter (log)
 max_learning_rate:
-  value: 0.01
   name : learning_rale
   type : float
   low  : 1e-5
