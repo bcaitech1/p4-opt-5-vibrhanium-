@@ -81,8 +81,8 @@ class TorchTrainer:
         criterion: nn.Module,
         optimizer: optim.Optimizer,
         scheduler,
-        model_path: str,
         scaler=None,
+        model_path: str = None,        
         device: torch.device = "cpu",
         verbose: int = 1,
     ) -> None:
@@ -94,6 +94,7 @@ class TorchTrainer:
             optimizer: optimization module
             device: torch device
             verbose: verbosity level.
+            best_f1: best f1 score you've ever trialed.
         """
 
         self.model = model
@@ -174,17 +175,20 @@ class TorchTrainer:
             )
             if best_test_f1 > test_f1:
                 continue
-            best_test_acc = test_acc
+
             best_test_f1 = test_f1
-            print(f"Model saved. Current best test f1: {best_test_f1:.3f}")
-            save_model(
-                model=self.model,
-                path=self.model_path,
-                data=data,
-                device=self.device,
-            )
+            best_test_acc = test_acc
+            if self.model_path:
+                print(f"Model saved. Current best test f1: {best_test_f1:.3f}")
+                save_model(
+                    model=self.model,
+                    path=self.model_path,
+                    data=data,
+                    device=self.device,
+                )
 
         return best_test_acc, best_test_f1
+
 
     @torch.no_grad()
     def test(
