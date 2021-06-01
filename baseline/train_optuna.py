@@ -226,7 +226,7 @@ if __name__ == '__main__':
     save_config_fn_base = cur_time
     os.makedirs(save_config_dir, exist_ok=True)
 
-    # for save best trials model weight
+    # for save model weight
     save_model_dir = "optuna_exp"
     save_model_path = os.path.join(save_model_dir, f"{cur_time}_best.pt")
     os.makedirs(save_model_dir, exist_ok=True)
