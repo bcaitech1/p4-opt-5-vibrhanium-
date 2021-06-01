@@ -18,32 +18,6 @@ from src.trainer import TorchTrainer
 from src.utils.common import get_label_counts, read_yaml
 from src.utils.macs import calc_macs
 
-# Setting directory and file name
-cur_time = datetime.now().strftime('%m%d_%H%M')
-
-# for save best trials model config
-save_config_dir = "configs/optuna_model"
-save_config_fn_base = cur_time
-os.makedirs(save_config_dir, exist_ok=True)
-
-# for save best trials model weight
-save_model_dir = "optuna_exp"
-save_model_path = os.path.join(save_model_dir, f"{cur_time}_best.pt")
-os.makedirs(save_model_dir, exist_ok=True)
-
-# for save visualization html
-visualization_dir = '/opt/ml/code/visualization_result'
-os.makedirs(visualization_dir, exist_ok=True)
-
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-num_class = 9
-
-# Create config file
-data_config = read_yaml('configs/data/taco_sample.yaml')
-base_config = read_yaml('configs/optuna_config/base_config.yaml')
-module_config = read_yaml('configs/optuna_config/module_config.yaml') 
-optimizer_config = read_yaml('configs/optuna_config/optimizer_config.yaml') 
-scheduler_config = read_yaml('configs/optuna_config/scheduler_config.yaml') 
 
 def suggest_from_config(trial, config_dict, key, name=None):
     """sugget value from config
