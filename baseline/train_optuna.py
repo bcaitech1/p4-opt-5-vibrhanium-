@@ -125,38 +125,24 @@ def train_model(trial,
     fp16 = data_config["FP16"] #floating point 16
     
     # search hyperparameter
-    epochs = suggest_from_config(trial, base_config, 'epochs')  
-    batch_size = suggest_from_config(trial, base_config, 'batch_size') 
-    max_lr = suggest_from_config(trial, base_config, 'max_learning_rate')
+    epochs = suggest_from_config(trial, base_config, 'epochs')
+    epochs = 1
+    batch_size = suggest_from_config(trial, base_config, 'batch_size')
     
     # Sample optimizer
-    optimizer_name = suggest_from_config(trial, base_config, 'optimizer') ## Adam
+    optimizer_name = suggest_from_config(trial, base_config, 'optimizer') ## AdamW
     
     # 좀 더 간단하게! 할 수 있을거야 #############
-    opt_params = optimizer_config[optimizer_name].keys()  # lr, beta1, beta2
+    opt_params = optimizer_config[optimizer_name].keys() #lr, beta1, beta2
     temp_dict = {}
-    for p in opt_params: # lr, betas
-        if p == 'betas':
-            beta1 = suggest_from_config(
-                trial, optimizer_config[optimizer_name], p
-            )  
-            beta2 = optimizer_config[optimizer_name][p]['beta2']
-            temp_dict['betas'] = (beta1, beta2)
-            continue
-            
-        temp_dict[p] = suggest_from_config(
-            trial, optimizer_config[optimizer_name], p
-        )
-    
-    optimizer = getattr(optim, optimizer_name)(
-        model_instance.parameters(), **temp_dict
-    )  # dictionary unpacking
+    for p in opt_params:
+        temp_dict[p] = suggest_from_config(trial, optimizer_config[optimizer_name], p) # lr, betas
+    optimizer = getattr(optim, optimizer_name)(model_instance.parameters(), **temp_dict) # dictionary unpacking
     
     # scheduler
     scheduler_name = suggest_from_config(trial, base_config, 'scheduler') ## CosineAnnealingLR
     
     sch_params = scheduler_config[scheduler_name].keys() # T_max eta_min last_epoch
-    print(sch_params)
     temp_dict = {}
     for s in sch_params:
         temp_dict[s] = suggest_from_config(trial, scheduler_config[scheduler_name], s) # lr, beta1, beta2
@@ -173,6 +159,7 @@ def train_model(trial,
     )
     
     data_config['IMG_SIZE'] = suggest_from_config(trial, base_config, 'img_size')
+    data_config['BATCH_SIZE'] = batch_size
     train_dl, val_dl, test_dl = create_dataloader(data_config)
     
     # Create trainer
@@ -225,16 +212,16 @@ if __name__ == '__main__':
     # for save best trials model config
     save_config_dir = "configs/optuna_model"
     save_config_fn_base = cur_time
-    os.mkdir(save_config_dir, exist_ok=True)
+    os.makedirs(save_config_dir, exist_ok=True)
 
     # for save best trials model weight
     save_model_dir = "optuna_exp"
     save_model_path = os.path.join(save_model_dir, f"{cur_time}_best.pt")
-    os.mkdir(save_model_dir, exist_ok=True)
+    os.makedirs(save_model_dir, exist_ok=True)
     
     # for save visualization html
     visualization_dir = '/opt/ml/code/visualization_result'
-    os.mkdir(visualization_dir, exist_ok=True)
+    os.makedirs(visualization_dir, exist_ok=True)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     num_class = 9
@@ -248,10 +235,13 @@ if __name__ == '__main__':
 
     # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
-    study.optimize(objective, n_trials=3)
+    study.optimize(objective, n_trials=1)
 
     # Save best trials model architecture and hyper-parameter
-    
+    for i, best_trial in enumerate(study.best_trials):
+        config_fn = f"{save_config_fn_base}_best_trials{i}.yaml"
+        with open(os.path.join(save_config_dir, config_fn), "w") as f:
+            yaml.dump(best_trial.params, f, default_flow_style=False)
 
     # Visualization
     fig = optuna.visualization.plot_pareto_front(study)
