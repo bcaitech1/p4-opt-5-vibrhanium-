@@ -14,7 +14,7 @@
 
 <기존의 방식>
 
-[train.py](http://train.py) 파일 내에서 하이퍼 파라미터를 설정할 때 일일이 `trail.suggest_` 함수를 사용해서 suggestion을 설정해주어야 했다.
+train.py 파일 내에서 하이퍼 파라미터를 설정할 때 일일이 `trail.suggest_` 함수를 사용해서 suggestion을 설정해주어야 했다.
 
 <수정된 방식>
 
