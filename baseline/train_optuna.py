@@ -134,11 +134,24 @@ def train_model(trial,
     optimizer_name = suggest_from_config(trial, base_config, 'optimizer') ## Adam
     
     # 좀 더 간단하게! 할 수 있을거야 #############
-    opt_params = optimizer_config[optimizer_name].keys() #lr, beta1, beta2
+    opt_params = optimizer_config[optimizer_name].keys()  # lr, beta1, beta2
     temp_dict = {}
-    for p in opt_params:
-        temp_dict[p] = suggest_from_config(trial, optimizer_config[optimizer_name], p) # lr, betas
-    optimizer = getattr(optim, optimizer_name)(model_instance.parameters(), **temp_dict) # dictionary unpacking
+    for p in opt_params: # lr, betas
+        if p == 'betas':
+            beta1 = suggest_from_config(
+                trial, optimizer_config[optimizer_name], p
+            )  
+            beta2 = optimizer_config[optimizer_name][p]['beta2']
+            temp_dict['betas'] = (beta1, beta2)
+            continue
+            
+        temp_dict[p] = suggest_from_config(
+            trial, optimizer_config[optimizer_name], p
+        )
+    
+    optimizer = getattr(optim, optimizer_name)(
+        model_instance.parameters(), **temp_dict
+    )  # dictionary unpacking
     
     # scheduler
     scheduler_name = suggest_from_config(trial, base_config, 'scheduler') ## CosineAnnealingLR
