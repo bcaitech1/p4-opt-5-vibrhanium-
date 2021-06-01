@@ -32,15 +32,15 @@ batch_size:
   type    : categorical
   choices :
 #             - 16
-            - 32
-#             - 64
+#             - 32
+            - 64
 
 # Epochs
 epochs:
   name : epochs
   type : int
-  low  : 10
-  high : 10
+  low  : 100
+  high : 100
   step : 10
 
 # Optimizer parameter
