@@ -104,13 +104,13 @@ dropout_rate:
   low  : 0.2
   high : 0.2
 
-# Floating point parameter (log)
-learning_rate:
-  name : learning_rale
-  type : float
-  low  : 1e-5
-  high : 1e-1
-  log  : True
+# # Floating point parameter (log)
+# learning_rate:
+#   name : learning_rate
+#   type : float
+#   low  : 1e-5
+#   high : 1e-1
+#   log  : True
 
 # Floating point parameter (log)
 max_learning_rate:
