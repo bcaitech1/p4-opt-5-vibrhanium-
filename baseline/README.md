@@ -159,6 +159,13 @@ trainer = TorchTrainer(
 1. best trials 에 해당되는 모델 architecture와 hyper parameter 
     - 저장 위치: `code/configs/optuna_model`
     - 파일 이름: `{mmdd_HHMM}.yaml`
+    
+    - [옵션] best trials 에 해당되는 모델 architecture(train 시 바로 사용할 수 있도록 정리)
+        - 저장 위치: `code/configs/optuna_model`
+        - 파일 이름: `{mmdd_HHMM}_model.yaml`
+    - [옵션] best trials 에 해당되는 hyperparamter
+        - 저장 위치: `code/configs/optuna_model`
+        - 파일 이름: `{mmdd_HHMM}_hyperparam.yaml`
 2. visualization된 파일
     - 저장 위치: `code/visualization_result`
     - 파일 이름: `{mmdd_HHMM}_best_trials{i}.html`
