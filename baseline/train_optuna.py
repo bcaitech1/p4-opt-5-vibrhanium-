@@ -126,9 +126,8 @@ def train_model(trial,
     
     # search hyperparameter
     epochs = suggest_from_config(trial, base_config, 'epochs')  
-    batch_size = suggest_from_config(trial, base_config, 'batch_size') ## 여기 32가 숫자로 잘 들어감?
+    batch_size = suggest_from_config(trial, base_config, 'batch_size') 
     max_lr = suggest_from_config(trial, base_config, 'max_learning_rate')
-    lr = suggest_from_config(trial, base_config, 'learning_rate')
     
     # Sample optimizer
     optimizer_name = suggest_from_config(trial, base_config, 'optimizer') ## Adam
