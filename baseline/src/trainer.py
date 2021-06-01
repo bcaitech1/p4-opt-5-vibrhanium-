@@ -85,7 +85,6 @@ class TorchTrainer:
         model_path: str = None,        
         device: torch.device = "cpu",
         verbose: int = 1,
-        global_best_f1: float = -1.0
     ) -> None:
         """Initialize TorchTrainer class.
 
@@ -106,7 +105,6 @@ class TorchTrainer:
         self.scaler = scaler
         self.verbose = verbose
         self.device = device
-        self.global_best_f1 = global_best_f1
 
     def train(
         self,
@@ -126,7 +124,6 @@ class TorchTrainer:
         """
         best_test_acc = -1.0
         best_test_f1 = -1.0
-        global_best_f1 = self.global_best_f1
         num_classes = _get_len_label_from_dataset(train_dataloader.dataset)
         label_list = [i for i in range(num_classes)]
 
@@ -176,13 +173,11 @@ class TorchTrainer:
             _, test_f1, test_acc = self.test(
                 model=self.model, test_dataloader=val_dataloader
             )
-            if best_test_f1 < test_f1:
-                best_test_f1 = test_f1
-
-            if global_best_f1 > test_f1:
+            if best_test_f1 > test_f1:
                 continue
-            best_test_acc = test_acc
+
             best_test_f1 = test_f1
+            best_test_acc = test_acc
             if self.model_path:
                 print(f"Model saved. Current best test f1: {best_test_f1:.3f}")
                 save_model(
@@ -192,7 +187,7 @@ class TorchTrainer:
                     device=self.device,
                 )
 
-        return best_test_acc, global_best_f1, best_test_f1
+        return best_test_acc, best_test_f1
 
 
     @torch.no_grad()
