@@ -126,7 +126,6 @@ def train_model(trial,
     
     # search hyperparameter
     epochs = suggest_from_config(trial, base_config, 'epochs')
-    epochs = 1
     batch_size = suggest_from_config(trial, base_config, 'batch_size')
     
     # Sample optimizer
@@ -135,9 +134,22 @@ def train_model(trial,
     # 좀 더 간단하게! 할 수 있을거야 #############
     opt_params = optimizer_config[optimizer_name].keys() #lr, beta1, beta2
     temp_dict = {}
-    for p in opt_params:
-        temp_dict[p] = suggest_from_config(trial, optimizer_config[optimizer_name], p) # lr, betas
-    optimizer = getattr(optim, optimizer_name)(model_instance.parameters(), **temp_dict) # dictionary unpacking
+    for p in opt_params: # lr, betas
+        if p == 'betas':
+            beta1 = suggest_from_config(
+                trial, optimizer_config[optimizer_name], p
+            )  
+            beta2 = optimizer_config[optimizer_name][p]['beta2']
+            temp_dict['betas'] = (beta1, beta2)
+            continue
+
+        temp_dict[p] = suggest_from_config(
+            trial, optimizer_config[optimizer_name], p
+        )
+
+    optimizer = getattr(optim, optimizer_name)(
+        model_instance.parameters(), **temp_dict
+    )  # dictionary unpacking
     
     # scheduler
     scheduler_name = suggest_from_config(trial, base_config, 'scheduler') ## CosineAnnealingLR
@@ -235,7 +247,7 @@ if __name__ == '__main__':
 
     # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
-    study.optimize(objective, n_trials=1)
+    study.optimize(objective, n_trials=3)
 
     # Save best trials model architecture and hyper-parameter
     for i, best_trial in enumerate(study.best_trials):
