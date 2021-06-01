@@ -1,10 +1,3 @@
-# # basic model config
-# model_config:
-#   input_channel: 3,
-#   depth_multiple: 1.0,
-#   width_multiple: 1.0,
-#   backbone: []
-
 # Anchor
 out_channels_low  : &out_channels_low   3
 out_channels_high : &out_channels_high  16
