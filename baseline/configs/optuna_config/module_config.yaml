@@ -1,8 +1,8 @@
 # Anchor
 out_channels_low  : &out_channels_low   3
-out_channels_high : &out_channels_high  16
+out_channels_high : &out_channels_high  5
 kernel_size_low   : &kernel_size_low    3
-kernel_size_high  : &kernel_size_high   16
+kernel_size_high  : &kernel_size_high   5
 
 # Normal Cell
 normal_cells:
