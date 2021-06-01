@@ -23,8 +23,8 @@ CosineAnnealingLR:
     T_max: # total epoch / 5
       name : T_max
       type : int
-      low  : 2
-      high : 2
+      low  : 20
+      high : 20
 
     eta_min:
       name : eta_min
