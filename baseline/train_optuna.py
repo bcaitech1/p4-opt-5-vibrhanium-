@@ -310,6 +310,8 @@ def make_hyperparam_config(trial, config_fn):
 
 
 if __name__ == '__main__':
+    # Setting base
+    cur_time = datetime.now().strftime('%m%d_%H%M')
     parser = argparse.ArgumentParser(description="Train model using optuna.")
     parser.add_argument(
         "--n_trials", default=10, type=int, help="optuna optimize n_trials"
@@ -320,41 +322,53 @@ if __name__ == '__main__':
     parser.add_argument(
         "--save_model", default=False, type=bool, help="choose save model or not save"
     )
+    parser.add_argument(
+        "--base", default="configs/optuna_config/base_config.yaml", type=str, help="base config"
+    )
+    parser.add_argument(
+        "--module", default="configs/optuna_config/module_config.yaml", type=str, help="module config"
+    )
+    parser.add_argument(
+        "--optimizer", default="configs/optuna_config/optimizer_config.yaml", type=str, help="optimizer config"
+    )
+    parser.add_argument(
+        "--scheduler", default="configs/optuna_config/scheduler_config.yaml", type=str, help="scheduler config"
+    )
+    parser.add_argument(
+        "--data", default="configs/data/taco_sample.yaml", type=str, help="data config"
+    )
     args = parser.parse_args()
 
-    # Setting directory and file name
-    cur_time = datetime.now().strftime('%m%d_%H%M')
-
-    # for save best trials model config
-    save_config_dir = f"./configs/optuna_model/{cur_time}"
-    save_config_fn_base = cur_time
-    os.makedirs(save_config_dir, exist_ok=True)
-
-    # for save best trials model weight
+    # Setting directory - for save best trials model weight
     if args.save_model:
         save_model_dir = f"./optuna_exp/{cur_time}"
         save_model_fn_base = cur_time
         os.makedirs(save_model_dir, exist_ok=True)
-    
-    # for save visualization html
-    visualization_dir = "./visualization_result"
-    os.makedirs(visualization_dir, exist_ok=True)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     num_class = 9
 
     # Create config file
-    data_config = read_yaml('configs/data/taco_sample.yaml')
-    base_config = read_yaml('configs/optuna_config/base_config.yaml')
-    module_config = read_yaml('configs/optuna_config/module_config.yaml') 
-    optimizer_config = read_yaml('configs/optuna_config/optimizer_config.yaml') 
-    scheduler_config = read_yaml('configs/optuna_config/scheduler_config.yaml') 
+    data_config = read_yaml(args.data)
+    base_config = read_yaml(args.base)
+    module_config = read_yaml(args.module) 
+    optimizer_config = read_yaml(args.optimizer) 
+    scheduler_config = read_yaml(args.scheduler) 
 
     # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
     study.optimize(objective, n_trials=args.n_trials)
 
-    # Save best trials or all_trials model architecture and hyper-parameter
+    # Setting directory - for save [best/all] trials model config
+    save_config_dir = f"./configs/optuna_model/{cur_time}"
+    save_config_fn_base = cur_time
+    os.makedirs(save_config_dir, exist_ok=True)
+
+    # Setting directory - for visualization
+    visualization_dir = "./visualization_result"
+    os.makedirs(visualization_dir, exist_ok=True)
+
+    # Save [best/all] trials model architecture and hyper-parameter
     save_all = args.save_all # if True, save all trial else, save best trial
     if save_all:
         trials = study.trials
@@ -376,3 +390,4 @@ if __name__ == '__main__':
     # Visualization
     fig = optuna.visualization.plot_pareto_front(study)
     fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}_pareto_front.html"))
+    
