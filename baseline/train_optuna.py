@@ -19,6 +19,7 @@ from src.trainer import TorchTrainer
 from src.utils.common import get_label_counts, read_yaml
 from src.utils.macs import calc_macs
 
+import wandb
 
 def suggest_from_config(trial, config_dict, key, name=None):
     """sugget value from config
@@ -234,7 +235,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     print(f"macs: {macs}")
 
     best_f1 = train_model(trial,model_instance)
-
+    wandb.log({'f1':best_f1, 'MACs':macs})
     return best_f1, macs
 
 
@@ -354,6 +355,9 @@ if __name__ == '__main__':
     module_config = read_yaml(args.module) 
     optimizer_config = read_yaml(args.optimizer) 
     scheduler_config = read_yaml(args.scheduler) 
+
+    # wandb setting
+    wandb.init(project='OPT', name = cur_time , reinit = False)
 
     # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
