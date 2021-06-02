@@ -1,0 +1,40 @@
+# https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+# scheduler config
+StepLR:
+    step_size:
+      name : step_size
+      type : int
+      low  : 30
+      high : 30
+
+    gamma:
+      name : gamma
+      type : float
+      low  : 0.1
+      high : 0.1
+    
+    last_epoch:
+      name : last_epoch
+      type : int
+      low  : -1
+      high : -1
+
+CosineAnnealingLR:
+    T_max: # total epoch / 5
+      name : T_max
+      type : int
+      low  : 20
+      high : 20
+
+    eta_min:
+      name : eta_min
+      type : float
+      low  : 0
+      high : 0
+
+    last_epoch:
+      name : last_epoch
+      type : int
+      low  : -1
+      high : -1
+

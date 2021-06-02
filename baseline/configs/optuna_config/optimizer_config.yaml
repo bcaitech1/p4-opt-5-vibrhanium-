@@ -1,0 +1,52 @@
+# Anchor
+lr_low      : &lr_low     0.001
+lr_high     : &lr_high    0.001
+beta1_low   : &beta1_low  0.9
+beta1_high  : &beta1_high 0.9
+weight_decay_low  : &weight_decay_low   0.01
+weight_decay_high : &weight_decay_high  0.01
+
+# optimizer config
+Adam:
+  lr     :
+    name : lr
+    type : float
+    low  : *lr_low
+    high : *lr_high
+    log  : True
+
+  betas  :
+    name : betas
+    type : float
+    low  : *beta1_low
+    high : *beta1_high
+    beta2 : 0.9999
+
+AdamW:
+  lr     : 
+    name : lr
+    type : float
+    low  : *lr_low
+    high : *lr_high
+    log  : True
+  
+  betas  :
+    name : betas
+    type : float
+    low  : *beta1_low
+    high : *beta1_high
+    beta2 : 0.9999
+
+  weight_decay:
+    name  : weight_decay
+    type  : float
+    low   : 0.0001
+    high  : 0.01
+
+SGD: 
+  lr     :
+    name : lr
+    type : float
+    low  : *lr_low
+    high : *lr_high
+    log  : True
