@@ -145,6 +145,7 @@ def train_model(trial,
     
     # search hyperparameter
     epochs = suggest_from_config(trial, base_config, 'epochs')
+    epochs = 1
     batch_size = suggest_from_config(trial, base_config, 'batch_size')
     
     # Sample optimizer
@@ -193,6 +194,8 @@ def train_model(trial,
     train_dl, val_dl, test_dl = create_dataloader(data_config)
     
     if args.save_model:
+        save_model_dir = os.path.join(save_model_dir_base, str(trial.number))
+        os.makedirs(save_model_dir, exist_ok=True)
         model_fn = f"{save_model_fn_base}_trial_{trial.number}_best.pt"
         model_path = os.path.join(save_model_dir, model_fn)
     else:
@@ -217,6 +220,7 @@ def train_model(trial,
 
 
 def objective(trial: optuna.trial.Trial) -> float:
+    global trial_num
     """Get objective score.
     
     Args:
@@ -235,7 +239,10 @@ def objective(trial: optuna.trial.Trial) -> float:
     print(f"macs: {macs}")
 
     best_f1 = train_model(trial,model_instance)
+    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit = False)
     wandb.log({'f1':best_f1, 'MACs':macs})
+    # trial_num += 1
+    run.finish()
     return best_f1, macs
 
 
@@ -342,9 +349,8 @@ if __name__ == '__main__':
 
     # Setting directory - for save best trials model weight
     if args.save_model:
-        save_model_dir = f"./optuna_exp/{cur_time}"
+        save_model_dir_base = f"./optuna_exp/{cur_time}"
         save_model_fn_base = cur_time
-        os.makedirs(save_model_dir, exist_ok=True)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     num_class = 9
@@ -357,17 +363,17 @@ if __name__ == '__main__':
     scheduler_config = read_yaml(args.scheduler) 
 
     # wandb setting
-    wandb.init(project='OPT', name = cur_time , reinit = False)
+    # trial_num = 0
+    # wandb.init(project='OPT', name = f'{cur_time}_{trial_num}' , reinit = False)
 
     # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
     study.optimize(objective, n_trials=args.n_trials)
 
     # Setting directory - for save [best/all] trials model config
-    save_config_dir = f"./configs/optuna_model/{cur_time}"
+    save_config_dir_base = f"./configs/optuna_model/{cur_time}"
     save_config_fn_base = cur_time
-    os.makedirs(save_config_dir, exist_ok=True)
-
+    
     # Setting directory - for visualization
     visualization_dir = "./visualization_result"
     os.makedirs(visualization_dir, exist_ok=True)
@@ -382,9 +388,8 @@ if __name__ == '__main__':
         config_fn_base = f"{save_config_fn_base}_best_trials"
         
     for i, trial in enumerate(trials):
-        config_fn = f"{config_fn_base}_{i}.yaml"
-        with open(os.path.join(save_config_dir, config_fn), "w") as f:
-            yaml.dump(trial.params, f, default_flow_style=False)
+        save_config_dir = os.path.join(save_config_dir_base, str(i))
+        os.makedirs(save_config_dir, exist_ok=True)
 
         config_fn = f"{config_fn_base}_{i}_model.yaml"
         make_model_config(trial, config_fn)
