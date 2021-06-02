@@ -156,31 +156,39 @@ trainer = TorchTrainer(
 
 ### 결과
 
-1. best trials 에 해당되는 모델 architecture와 hyperparameter 
-    - 저장 위치: `code/configs/optuna_model`
-    - 파일 이름: `{mmdd_HHMM}.yaml`
+1. save_all에 따라 all trials 또는 best trials에 해당되는 모델 architecture와 hyperparameter 
+    - 저장 위치: `code/configs/optuna_model/{mmdd_HHMM}`
+    - 파일 이름: `{mmdd_HHMM}_[trial/best_trials]_{i}.yaml`
     
     - [옵션] best trials 에 해당되는 모델 architecture(train 시 바로 사용할 수 있도록 정리)
-        - 저장 위치: `code/configs/optuna_model`
-        - 파일 이름: `{mmdd_HHMM}_model.yaml`
+        - 저장 위치: `code/configs/optuna_model{mmdd_HHMM}`
+        - 파일 이름: `{mmdd_HHMM}_[trial/best_trials]_{i}_model.yaml`
     - [옵션] best trials 에 해당되는 hyperparamter
-        - 저장 위치: `code/configs/optuna_model`
-        - 파일 이름: `{mmdd_HHMM}_hyperparam.yaml`
+        - 저장 위치: `code/configs/optuna_model/{mmdd_HHMM}`
+        - 파일 이름: `{mmdd_HHMM}_[trial/best_trials]_{i}_hyperparam.yaml`
 2. visualization된 파일
     - 저장 위치: `code/visualization_result`
-    - 파일 이름: `{mmdd_HHMM}_best_trials{i}.html`
+    - 파일 이름: `{mmdd_HHMM}_best_trials_{i}.html`
 3. [옵션] best epoch의 model weight
-    - 저장 위치: `code/optuna_exp`
-    - 파일 이름: `{mmdd_HHMM}_best.pt`
+    - 저장 위치: `code/optuna_exp/{mmdd_HHMM}`
+    - 파일 이름: `{mmdd_HHMM}_trail_{i}_best.pt`
     - 주의 사항: **각 trial**에 대해서 **f1값을 기준**으로 가장 좋은 모델을 선정합니다.
 
 # 사용법
 
-- code/optuna_cofig 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 train_optuna.py 실행
+- `train_optuna.py` 실행
+    - code/optuna_cofig 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 train_optuna.py 실행
+    ```
+    python train_optuna.py --n_trials ${탐색시도 횟수} --save_all ${모든 trials 저장여부}
+    # EX) python train_optuna.py --n_trials 3 --save_all True
+    ```
+    
+- `train.py` 실행
+    ```
+    python train.py --model ${모델 파일 경로} --data ${데이터셋 파일 경로}
+    # EX) python train.py --model configs/model/mobilenetv3.yaml --data configs/data/taco.yaml
+    ```
 
-```bash
-$ python train_optuna.py
-```
 
 # Reference
 
