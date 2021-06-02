@@ -145,7 +145,6 @@ def train_model(trial,
     
     # search hyperparameter
     epochs = suggest_from_config(trial, base_config, 'epochs')
-    epochs = 1
     batch_size = suggest_from_config(trial, base_config, 'batch_size')
     
     # Sample optimizer
