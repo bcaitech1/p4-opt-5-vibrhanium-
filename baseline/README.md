@@ -14,7 +14,7 @@
 
 <기존의 방식>
 
-train.py 파일 내에서 하이퍼 파라미터를 설정할 때 일일이 `trail.suggest_` 함수를 사용해서 suggestion을 설정해주어야 했다.
+train.py 파일 내에서 하이퍼 파라미터를 설정할 때 일일이 `trial.suggest_` 함수를 사용해서 suggestion을 설정해주어야 했다.
 
 <수정된 방식>
 
@@ -132,7 +132,7 @@ CosineAnnealingLR (T_max, eta_min, last_epoch)
 `TorchTrainer` object 생성시 `model_path`를 인자로 전해주면 model의 weight를 저장하고 전해주지 않으면 model의 weight를 저장하지 않는다.
 
 ```python
-# **train_optuna.py**
+# train_optuna.py
 
 # Create trainer
 trainer = TorchTrainer(
@@ -142,7 +142,7 @@ trainer = TorchTrainer(
     scheduler=scheduler,
     scaler=scaler,
     device=device,
-    **model_path**=model_path,
+    model_path=model_path, # KEY POINT
     verbose=1,
 
 )
@@ -152,11 +152,11 @@ trainer = TorchTrainer(
 
 ### 작동 방식
 
-`suggest_from_config(trial, config_dict, name, idx='')` 함수를 사용하여 입력된 config.yaml 파일에서 해당 name 인자를 가져와서 suggestion으로 바꿔줌.
+`suggest_from_config(trial, config_dict, key, name)` 함수를 사용하여 입력된 config.yaml 파일에서 해당 key 인자를 가져와서 suggestion으로 바꿔줌.
 
 ### 결과
 
-1. best trials 에 해당되는 모델 architecture와 hyper parameter 
+1. best trials 에 해당되는 모델 architecture와 hyperparameter 
     - 저장 위치: `code/configs/optuna_model`
     - 파일 이름: `{mmdd_HHMM}.yaml`
     
