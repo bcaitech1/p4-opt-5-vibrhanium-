@@ -143,8 +143,7 @@ def train_model(trial,
     fp16 = data_config["FP16"] #floating point 16
     
     # search hyperparameter
-#     epochs = suggest_from_config(trial, base_config, 'epochs')
-    epochs = 1
+    epochs = suggest_from_config(trial, base_config, 'epochs')
     batch_size = suggest_from_config(trial, base_config, 'batch_size')
     
     # Sample optimizer
@@ -170,7 +169,7 @@ def train_model(trial,
     )
     
     # scheduler
-    scheduler_name = suggest_from_config(trial, base_config, 'scheduler') ## CosineAnnealingLR
+    scheduler_name = suggest_from_config(trial, base_config, 'scheduler') # CosineAnnealingLR
     
     sch_params = scheduler_config[scheduler_name].keys() # T_max eta_min last_epoch
     temp_dict = {}
@@ -192,6 +191,11 @@ def train_model(trial,
     data_config['BATCH_SIZE'] = batch_size
     train_dl, val_dl, test_dl = create_dataloader(data_config)
     
+    if args.save_model:
+        model_fn = f"{save_model_fn_base}_trial_{trial.number}_best.pt"
+        model_path = os.path.join(save_model_dir, model_fn)
+    else:
+        model_path = None
     # Create trainer
     trainer = TorchTrainer(
         model=model_instance.model,
@@ -200,7 +204,7 @@ def train_model(trial,
         scheduler=scheduler,
         scaler=scaler,
         device=device,
-        # model_path=model_path,
+        model_path=model_path,
         verbose=1,
     )
     best_acc, best_f1 = trainer.train(
@@ -313,6 +317,9 @@ if __name__ == '__main__':
     parser.add_argument(
         "--save_all", default=True, type=bool, help="choose all trials save or best trials save"
     )
+    parser.add_argument(
+        "--save_model", default=False, type=bool, help="choose save model or not save"
+    )
     args = parser.parse_args()
 
     # Setting directory and file name
@@ -324,9 +331,10 @@ if __name__ == '__main__':
     os.makedirs(save_config_dir, exist_ok=True)
 
     # for save best trials model weight
-    save_model_dir = f"./optuna_exp/{cur_time}"
-    save_model_path = os.path.join(save_model_dir, f"{cur_time}_best.pt")
-    os.makedirs(save_model_dir, exist_ok=True)
+    if args.save_model:
+        save_model_dir = f"./optuna_exp/{cur_time}"
+        save_model_fn_base = cur_time
+        os.makedirs(save_model_dir, exist_ok=True)
     
     # for save visualization html
     visualization_dir = "./visualization_result"
