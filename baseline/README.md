@@ -179,8 +179,8 @@ trainer = TorchTrainer(
 - `train_optuna.py` 실행
     - code/optuna_cofig 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 train_optuna.py 실행
     ```
-    python train_optuna.py --n_trials ${탐색시도 횟수} --save_all ${모든 trials 저장여부}
-    # EX) python train_optuna.py --n_trials 3 --save_all True
+    python train_optuna.py --n_trials ${탐색시도 횟수} --save_all ${모든 trials 저장여부} --save_model ${model weight 저장여부}
+    # EX) python train_optuna.py --n_trials 10 --save_all True --save_model False
     ```
     
 - `train.py` 실행
