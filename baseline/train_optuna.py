@@ -1,6 +1,7 @@
 import os
 import re
 import yaml
+import argparse
 from datetime import datetime
 from typing import Any, Dict, Tuple, Union
 
@@ -142,7 +143,8 @@ def train_model(trial,
     fp16 = data_config["FP16"] #floating point 16
     
     # search hyperparameter
-    epochs = suggest_from_config(trial, base_config, 'epochs')
+#     epochs = suggest_from_config(trial, base_config, 'epochs')
+    epochs = 1
     batch_size = suggest_from_config(trial, base_config, 'batch_size')
     
     # Sample optimizer
@@ -218,7 +220,6 @@ def objective(trial: optuna.trial.Trial) -> float:
         float: Score value.
             whether to maximize, minimize will determined in optuna study setup.
     """
-    
     model_config = search_model(trial)
 
     model_instance = Model(model_config, verbose=True)
@@ -233,11 +234,11 @@ def objective(trial: optuna.trial.Trial) -> float:
     return best_f1, macs
 
 
-def make_model_config(best_trial, config_fn):
+def make_model_config(trial, config_fn):
     """make model config file
 
     Args:
-        best_trial (Dict[str, Any]): best trial
+        trial (Dict[str, Any]): trial
         config_fn (str): config file name
     """
     # Sample Normal Cell(NC)
@@ -257,19 +258,19 @@ def make_model_config(best_trial, config_fn):
         else:
             cell_types = ['normal', 'reduction']
             
-        # best_trial.params의 key 들 중 normal_cells_i 별로 추출
+        # trial.params의 key 들 중 normal_cells_i 별로 추출
         for cell_type in cell_types:
             p = re.compile(f'{cell_type}_cells_{i}/')
             matched_keys = []
-            for name in best_trial.params.keys():
+            for name in trial.params.keys():
                 if p.match(name):
                     matched_keys.append(name)
 
             # 찾은 key에 해당하는 값 추출
-            cell = [best_trial.params[f'n{i+1}_repeat'], best_trial.params[f'{cell_type}_cells_{i}']]
+            cell = [trial.params[f'n{i+1}_repeat'], trial.params[f'{cell_type}_cells_{i}']]
             cell_args = []
             for name in matched_keys:
-                cell_args.append(best_trial.params[name])
+                cell_args.append(trial.params[name])
             cell.append(cell_args)
             backbone.append(cell)
 
@@ -277,12 +278,18 @@ def make_model_config(best_trial, config_fn):
     model_config["backbone"].append([1, "GlobalAvgPool", []])
     model_config["backbone"].append([1, "Flatten", []])
     model_config["backbone"].append([1, "Linear", [num_class]])
-    
+
     with open(os.path.join(save_config_dir, config_fn), "w") as f:
         yaml.dump(model_config, f, default_flow_style=False)
 
 
-def make_hyperparam_config(best_trial, config_fn):
+def make_hyperparam_config(trial, config_fn):
+    """make model config file
+
+    Args:
+        trial (Dict[str, Any]): trial
+        config_fn (str): config file name
+    """
     hyperparams = [
         'epochs', 'batch_size', 'optimizer', 'lr', 
         'betas', 'weight_decay', 'scheduler', 'T_max', 
@@ -290,7 +297,7 @@ def make_hyperparam_config(best_trial, config_fn):
         ]
 
     hyperparams_config = {}
-    for key, value in best_trial.params.items():
+    for key, value in trial.params.items():
         if key in hyperparams:
             hyperparams_config[key] = value
 
@@ -299,16 +306,25 @@ def make_hyperparam_config(best_trial, config_fn):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Train model using optuna.")
+    parser.add_argument(
+        "--n_trials", default=10, type=int, help="optuna optimize n_trials"
+    )
+    parser.add_argument(
+        "--save_all", default=True, type=bool, help="choose all trials save or best trials save"
+    )
+    args = parser.parse_args()
+
     # Setting directory and file name
     cur_time = datetime.now().strftime('%m%d_%H%M')
 
     # for save best trials model config
-    save_config_dir = "./configs/optuna_model"
+    save_config_dir = f"./configs/optuna_model/{cur_time}"
     save_config_fn_base = cur_time
     os.makedirs(save_config_dir, exist_ok=True)
 
     # for save best trials model weight
-    save_model_dir = "./optuna_exp"
+    save_model_dir = f"./optuna_exp/{cur_time}"
     save_model_path = os.path.join(save_model_dir, f"{cur_time}_best.pt")
     os.makedirs(save_model_dir, exist_ok=True)
     
@@ -328,20 +344,26 @@ if __name__ == '__main__':
 
     # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
-    study.optimize(objective, n_trials=3)  ####### 여기 수정해서 사용 #######
+    study.optimize(objective, n_trials=args.n_trials)
 
-    # Save best trials model architecture and hyper-parameter
-    want_parse = True
-    for i, best_trial in enumerate(study.best_trials):
-        config_fn = f"{save_config_fn_base}_best_trials{i}.yaml"
+    # Save best trials or all_trials model architecture and hyper-parameter
+    save_all = args.save_all # if True, save all trial else, save best trial
+    if save_all:
+        trials = study.trials
+        config_fn_base = f"{save_config_fn_base}_trials"
+    else:
+        trials = study.best_trials
+        config_fn_base = f"{save_config_fn_base}_best_trials"
+        
+    for i, trial in enumerate(trials):
+        config_fn = f"{config_fn_base}_{i}.yaml"
         with open(os.path.join(save_config_dir, config_fn), "w") as f:
-            yaml.dump(best_trial.params, f, default_flow_style=False)
+            yaml.dump(trial.params, f, default_flow_style=False)
 
-        if want_parse:
-            config_fn = f"{save_config_fn_base}_best_trials{i}_model.yaml"
-            make_model_config(best_trial, config_fn)
-            config_fn = f"{save_config_fn_base}_best_trials{i}_hyperparam.yaml"
-            make_hyperparam_config(best_trial, config_fn)
+        config_fn = f"{config_fn_base}_{i}_model.yaml"
+        make_model_config(trial, config_fn)
+        config_fn = f"{config_fn_base}_{i}_hyperparam.yaml"
+        make_hyperparam_config(trial, config_fn)
 
     # Visualization
     fig = optuna.visualization.plot_pareto_front(study)
