@@ -211,8 +211,6 @@ def train_model(trial,
         device=device,
         model_path=model_path,
         verbose=1,
-        number=trial.number,
-        cur_time=cur_time
     )
     best_acc, best_f1 = trainer.train(
         train_dataloader=train_dl,
