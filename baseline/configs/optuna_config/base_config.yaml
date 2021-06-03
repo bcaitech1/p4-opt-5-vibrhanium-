@@ -39,8 +39,8 @@ batch_size:
 epochs:
   name : epochs
   type : int
-  low  : 100
-  high : 100
+  low  : 3
+  high : 3
   step : 10
 
 # Optimizer parameter
