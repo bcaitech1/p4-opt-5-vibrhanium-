@@ -165,8 +165,8 @@ class TorchTrainer:
                 pbar.set_description(
                     f"Train: [{epoch + 1:03d}] "
                     f"Loss: {(running_loss / (batch + 1)):.3f}, "
+                    f"F1(macro): {f1_score(y_true=gt, y_pred=preds, labels=label_list, average='macro', zero_division=0):.2f}, "
                     f"Acc: {(correct / total) * 100:.2f}% "
-                    f"F1(macro): {f1_score(y_true=gt, y_pred=preds, labels=label_list, average='macro', zero_division=0):.2f}"
                 )
             pbar.close()
 
