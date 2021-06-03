@@ -167,10 +167,10 @@ trainer = TorchTrainer(
 #### 결과
 
 1. save_all에 따라 trials 또는 best trials에 해당되는 모델 architecture
-    - 저장 위치: `code/configs/optuna_model{mmdd_HHMM}/{i}`
+    - 저장 위치: `input/config/optuna_model{mmdd_HHMM}/{i}`
     - 파일 이름: `{mmdd_HHMM}_(best_)trials_{i}_model.yaml`
 3. save_all에 따라 trials 또는 best trials에 해당되는 hyperparameter 
-    - 저장 위치: `code/configs/optuna_model/{mmdd_HHMM}/{i}`
+    - 저장 위치: `input/config/optuna_model/{mmdd_HHMM}/{i}`
     - 파일 이름: `{mmdd_HHMM}_(best_)trials_{i}_hyperparam.yaml`
 4. visualization된 파일
     - 저장 위치: `code/visualization_result`
@@ -183,8 +183,8 @@ trainer = TorchTrainer(
 ## 사용법
 
 - `train_optuna.py` 실행
-    - `code/optuna_cofig` 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 `train_optuna.py` 실행
-    - **`study_name` argument는 default 값이 없으므로 반드시 직접 설정해주어야합니다.**
+    - `input/config/optuna_config` 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 `train_optuna.py` 실행
+    - **`study_name` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     ```
     python train_optuna.py --n_trials ${탐색시도 횟수} \
                            --study_name ${optuna study의 별칭(이름)} \
