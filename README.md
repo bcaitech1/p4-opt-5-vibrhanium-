@@ -13,4 +13,8 @@ Search를 통하여 경량 모델을 찾는 기법으로 조금 더 일반적인
 - [AutoML(Automated Machine Learning)](https://github.com/bcaitech1/p4-opt-5-vibrhanium-/tree/master/AutoML)
 
 test
+<<<<<<< HEAD
 asdfasdf
+=======
+aaaaaaaa
+>>>>>>> b1aad439c6d50794667adc95c23bce1bac781831
