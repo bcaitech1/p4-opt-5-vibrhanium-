@@ -212,9 +212,7 @@ def train_model(trial,
         scaler=scaler,
         device=device,
         model_path=model_path,
-        verbose=1,
-        number=trial.number,
-        cur_time=cur_time
+        verbose=1
     )
     best_acc, best_f1 = trainer.train(
         train_dataloader=train_dl,
@@ -242,7 +240,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     macs = calc_macs(model_instance.model, (3, data_config["IMG_SIZE"], data_config["IMG_SIZE"]))
     print(f"macs: {macs}")
 
-    best_f1 = train_model(trial,model_instance)
+    best_f1 = train_model(trial, model_instance)
     run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
     wandb.log({'f1':best_f1, 'MACs':macs})
     run.finish()
