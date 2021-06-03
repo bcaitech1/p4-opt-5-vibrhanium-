@@ -79,17 +79,22 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
         'width_multiple': 1.0,
         'backbone': [],
         }
+
     dropout_rate = suggest_from_config(trial, base_config, "dropout_rate")
+    
     # Sample Normal Cell(NC)
     n_nc = num_cells['value'] 
+
     low, high = num_cells['low'], num_cells['high']
     # deeper layer, more features
     nx = [trial.suggest_int(name=f"n{i}_repeat", low=low*(i), high=high*(i)) for i in range(1,n_nc+1)] 
+    
     ncx = [[] for _ in range(n_nc)]
     ncx_args = [[] for _ in range(n_nc)]
     for i in range(n_nc):
         nc = suggest_from_config(trial, base_config, 'normal_cells', f'normal_cells_{i}')
         nc_config = normal_cells[nc]
+
         nc_args = []
         for arg, value in nc_config.items(): #out_channel, {name:oc, type:int ... } | kernel_size, {asd}
             if isinstance(value, dict): 
@@ -98,6 +103,7 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
                 nc_args.append(value)
         ncx[i] = nc
         ncx_args[i] = nc_args
+
     # Sample Reduction Cell(RC)
     n_rc = n_nc-1
     rcx = [[] for _ in range(n_rc)]
@@ -105,6 +111,7 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     for i in range(n_rc):
         rc = suggest_from_config(trial, base_config, 'reduction_cells', f'reduction_cells_{i}')
         rc_config = reduction_cells[rc]
+
         rc_args = []
         for arg, value in rc_config.items():
             if isinstance(value, dict):
@@ -113,15 +120,16 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
                 rc_args.append(value)
         rcx[i] = rc
         rcx_args[i] = rc_args
+
     for i in range(n_rc):
         model_config["backbone"].append([nx[i], ncx[i], ncx_args[i]])
         model_config["backbone"].append([1,     rcx[i], rcx_args[i]])
     model_config["backbone"].append([nx[-1], ncx[-1], ncx_args[-1]])
-    model_config["backbone"].append([1, "Dropout", [dropout_rate]])
     model_config["backbone"].append([1, "GlobalAvgPool", []])
     model_config["backbone"].append([1, "Flatten", []])
+    model_config["backbone"].append([1, "Dropout", [dropout_rate]])
     model_config["backbone"].append([1, "Linear", [num_class]])
-    
+
     return model_config
 
 
@@ -205,6 +213,8 @@ def train_model(trial,
         device=device,
         model_path=model_path,
         verbose=1,
+        number=trial.number,
+        cur_time=cur_time
     )
     best_acc, best_f1 = trainer.train(
         train_dataloader=train_dl,
@@ -236,6 +246,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
     wandb.log({'f1':best_f1, 'MACs':macs})
     run.finish()
+    
     return best_f1, macs
 
 
@@ -255,6 +266,7 @@ def make_model_config(trial, config_fn):
         'width_multiple': 1.0,
         'backbone': None,
         }
+    dropout_rate = suggest_from_config(trial, base_config, "dropout_rate")
 
     backbone = []
     for i in range(n_nc):
@@ -282,6 +294,7 @@ def make_model_config(trial, config_fn):
     model_config['backbone'] = backbone
     model_config["backbone"].append([1, "GlobalAvgPool", []])
     model_config["backbone"].append([1, "Flatten", []])
+    model_config["backbone"].append([1, "Dropout", [dropout_rate]])
     model_config["backbone"].append([1, "Linear", [num_class]])
 
     with open(os.path.join(save_config_dir, config_fn), "w") as f:
