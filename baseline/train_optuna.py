@@ -238,7 +238,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     print(f"macs: {macs}")
 
     best_f1 = train_model(trial,model_instance)
-    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit = False)
+    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
     wandb.log({'f1':best_f1, 'MACs':macs})
     run.finish()
     return best_f1, macs
@@ -382,7 +382,7 @@ if __name__ == '__main__':
     study.optimize(objective, n_trials=args.n_trials)
 
     # Setting directory - for save [best/all] trials model config
-    save_config_dir_base = f"./configs/optuna_model/{cur_time}"
+    save_config_dir_base = f"/opt/ml/input/config/optuna_model/{cur_time}"
     save_config_fn_base = cur_time
     
     # Setting directory - for visualization
@@ -410,4 +410,3 @@ if __name__ == '__main__':
     # Visualization
     # fig = optuna.visualization.plot_pareto_front(study)
     # fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}_pareto_front.html"))
-    
