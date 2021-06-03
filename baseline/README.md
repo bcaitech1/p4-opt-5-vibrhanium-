@@ -26,13 +26,13 @@
 
 <기존의 방식>
 
-train.py 파일 내에서 하이퍼 파라미터를 설정할 때 일일이 `trial.suggest_` 함수를 사용해서 suggestion을 설정해주어야 했다.
+`train.py` 파일 내에서 하이퍼 파라미터를 설정할 때 일일이 `trial.suggest_` 함수를 사용해서 suggestion을 설정해주어야 했다.
 
 <수정된 방식>
 
-optuna_config 폴더의 yaml 파일의 내용을 변경함으로써 간편하게 하이퍼 파라미터의 suggestion을 설정해줄 수 있게 되었다.
+`config/optuna_config`의 yaml 파일의 내용을 변경함으로써 간편하게 하이퍼 파라미터의 suggestion을 설정해줄 수 있게 되었다.
 
-또한 가장 좋은 성능을 낸 모델 (`best.pt`), 해당 모델의 구조와 하이퍼 파라미터 (`{current_time}.yaml`), optuna.Study의 시각화 결과 (`_pareto_font.html`)를 저장한다.
+또한 가장 좋은 성능을 낸 모델 (`best.pt`), 해당 모델의 구조와 하이퍼 파라미터 (`{current_time}.yaml`), `optuna.Study`의 시각화 결과 (`_pareto_font.html`)를 저장한다.
 
 ## File structure
 
@@ -162,15 +162,15 @@ trainer = TorchTrainer(
 
 #### 작동 방식
 
-`suggest_from_config(trial, config_dict, key, name)` 함수를 사용하여 입력된 config.yaml 파일에서 해당 key 인자를 가져와서 suggestion으로 바꿔줌.
+`suggest_from_config(trial, config_dict, key, name)` 함수를 사용하여 입력된 `config.yaml` 파일에서 해당 key 인자를 가져와서 suggestion으로 바꿔줌.
 
 #### 결과
 
 1. save_all에 따라 trials 또는 best trials에 해당되는 모델 architecture
-    - 저장 위치: `code/configs/optuna_model{mmdd_HHMM}/{i}`
+    - 저장 위치: `input/config/optuna_model{mmdd_HHMM}/{i}`
     - 파일 이름: `{mmdd_HHMM}_(best_)trials_{i}_model.yaml`
 3. save_all에 따라 trials 또는 best trials에 해당되는 hyperparameter 
-    - 저장 위치: `code/configs/optuna_model/{mmdd_HHMM}/{i}`
+    - 저장 위치: `input/config/optuna_model/{mmdd_HHMM}/{i}`
     - 파일 이름: `{mmdd_HHMM}_(best_)trials_{i}_hyperparam.yaml`
 4. visualization된 파일
     - 저장 위치: `code/visualization_result`
@@ -183,9 +183,11 @@ trainer = TorchTrainer(
 ## 사용법
 
 - `train_optuna.py` 실행
-    - code/optuna_cofig 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 train_optuna.py 실행
+    - `input/config/optuna_config` 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 `train_optuna.py` 실행
+    - **`study_name` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     ```
     python train_optuna.py --n_trials ${탐색시도 횟수} \
+                           --study_name ${optuna study의 별칭(이름)} \
                            --save_all ${모든 trials 저장여부} \ 
                            --save_model ${model weight 저장여부} \ 
                            --base ${base config 파일 경로} \ 
@@ -198,6 +200,7 @@ trainer = TorchTrainer(
     ```
     # 예시
     python train_optuna.py --n_trials 10 \
+                           --study_name my_study \
                            --save_all True \ 
                            --save_model False \
                            --base configs/optuna_config/base_config.yaml

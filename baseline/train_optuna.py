@@ -1,16 +1,19 @@
 import os
 import re
+import sys
 import yaml
+import logging
 import argparse
 from datetime import datetime
 from typing import Any, Dict, Tuple, Union
 
+import wandb
+import optuna
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
-
-import optuna
+from dotenv import load_dotenv
 
 from src.dataloader import create_dataloader
 from src.loss import CustomCriterion
@@ -19,7 +22,6 @@ from src.trainer import TorchTrainer
 from src.utils.common import get_label_counts, read_yaml
 from src.utils.macs import calc_macs
 
-import wandb
 
 def suggest_from_config(trial, config_dict, key, name=None):
     """sugget value from config
@@ -241,8 +243,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     print(f"macs: {macs}")
 
     best_f1 = train_model(trial,model_instance)
-    
-    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit = False)
+    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
     wandb.log({'f1':best_f1, 'MACs':macs})
     run.finish()
     
@@ -330,6 +331,9 @@ if __name__ == '__main__':
         "--n_trials", default=10, type=int, help="optuna optimize n_trials"
     )
     parser.add_argument(
+        "--study_name", type=str, help="optuna study alias name"
+    )
+    parser.add_argument(
         "--save_all", default=True, type=bool, help="choose all trials save or best trials save"
     )
     parser.add_argument(
@@ -350,6 +354,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--data", default="configs/data/taco_sample.yaml", type=str, help="data config"
     )
+
     args = parser.parse_args()
 
     # Setting directory - for save best trials model weight
@@ -365,19 +370,32 @@ if __name__ == '__main__':
     base_config = read_yaml(args.base)
     module_config = read_yaml(args.module) 
     optimizer_config = read_yaml(args.optimizer) 
-    scheduler_config = read_yaml(args.scheduler)
+    scheduler_config = read_yaml(args.scheduler) 
+    
+    # DB setup
+    load_dotenv(verbose=True)
+    DB_HOST = os.getenv("DB_HOST")
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+
+    optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+    storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
     
     # Optuna study
-    study = optuna.create_study(directions=["maximize", "minimize"])
+    study = optuna.create_study(storage=storage_name,
+                                study_name=args.study_name,
+                                load_if_exists=True,
+                                directions=["maximize", "minimize"])
     study.optimize(objective, n_trials=args.n_trials)
 
     # Setting directory - for save [best/all] trials model config
-    save_config_dir_base = f"./configs/optuna_model/{cur_time}"
+    save_config_dir_base = f"/opt/ml/input/config/optuna_model/{cur_time}"
     save_config_fn_base = cur_time
     
     # Setting directory - for visualization
-    visualization_dir = "./visualization_result"
-    os.makedirs(visualization_dir, exist_ok=True)
+    # visualization_dir = "./visualization_result"
+    # os.makedirs(visualization_dir, exist_ok=True)
 
     # Save [best/all] trials model architecture and hyper-parameter
     save_all = args.save_all # if True, save all trial else, save best trial
@@ -398,6 +416,5 @@ if __name__ == '__main__':
         make_hyperparam_config(trial, config_fn)
 
     # Visualization
-    fig = optuna.visualization.plot_pareto_front(study)
-    fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}_pareto_front.html"))
-    
+    # fig = optuna.visualization.plot_pareto_front(study)
+    # fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}_pareto_front.html"))
