@@ -21,6 +21,11 @@ from src.utils.macs import calc_macs
 
 import wandb
 
+
+abc =[]
+abcd =[]
+abcde =[]
+
 def suggest_from_config(trial, config_dict, key, name=None):
     """sugget value from config
 
@@ -77,20 +82,17 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
         'width_multiple': 1.0,
         'backbone': [],
         }
-    
+    dropout_rate = suggest_from_config(trial, base_config, "dropout_rate")
     # Sample Normal Cell(NC)
     n_nc = num_cells['value'] 
-
     low, high = num_cells['low'], num_cells['high']
     # deeper layer, more features
     nx = [trial.suggest_int(name=f"n{i}_repeat", low=low*(i), high=high*(i)) for i in range(1,n_nc+1)] 
-    
     ncx = [[] for _ in range(n_nc)]
     ncx_args = [[] for _ in range(n_nc)]
     for i in range(n_nc):
         nc = suggest_from_config(trial, base_config, 'normal_cells', f'normal_cells_{i}')
         nc_config = normal_cells[nc]
-
         nc_args = []
         for arg, value in nc_config.items(): #out_channel, {name:oc, type:int ... } | kernel_size, {asd}
             if isinstance(value, dict): 
@@ -99,7 +101,6 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
                 nc_args.append(value)
         ncx[i] = nc
         ncx_args[i] = nc_args
-
     # Sample Reduction Cell(RC)
     n_rc = n_nc-1
     rcx = [[] for _ in range(n_rc)]
@@ -107,7 +108,6 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     for i in range(n_rc):
         rc = suggest_from_config(trial, base_config, 'reduction_cells', f'reduction_cells_{i}')
         rc_config = reduction_cells[rc]
-
         rc_args = []
         for arg, value in rc_config.items():
             if isinstance(value, dict):
@@ -116,16 +116,15 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
                 rc_args.append(value)
         rcx[i] = rc
         rcx_args[i] = rc_args
-
-
     for i in range(n_rc):
         model_config["backbone"].append([nx[i], ncx[i], ncx_args[i]])
         model_config["backbone"].append([1,     rcx[i], rcx_args[i]])
     model_config["backbone"].append([nx[-1], ncx[-1], ncx_args[-1]])
+    model_config["backbone"].append([1, "Dropout", [dropout_rate]])
     model_config["backbone"].append([1, "GlobalAvgPool", []])
     model_config["backbone"].append([1, "Flatten", []])
     model_config["backbone"].append([1, "Linear", [num_class]])
-
+    
     return model_config
 
 
