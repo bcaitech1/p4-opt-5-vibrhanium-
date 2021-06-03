@@ -14,7 +14,7 @@
 - [사용법](#사용법)
 - [Reference](#reference)
 
-**yaml 파일만 건드려서 실험을 편하게 하기 위해 Custom search space 구성**
+**yaml 파일만으로 Custom search space 구성하여 실험을 편리하게 할 수 있도록 함**
 
 - 모듈 block(micro)는 탐색 ⭕
 - 모듈 block들의 조합 및 구성(macro) 탐색 ❌, 왼쪽 아래 구조(CIFAR10 Architecture)를 차용
