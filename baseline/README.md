@@ -1,8 +1,20 @@
-# README.md
+# P stage 4 - Model optimization <!-- omit in toc -->
 
-### 요약: yaml 파일만 건드려서 실험을 편하게 하기 위한 수정 방안
+- [File structure](#file-structure)
+- [바뀐 점](#바뀐-점)
+  - [optuna_config](#optuna_config)
+    - [1. base_config.yaml](#1-base_configyaml)
+    - [2. module_config.yaml](#2-module_configyaml)
+    - [3. optimizer_config.yaml](#3-optimizer_configyaml)
+    - [4. Scheduler_config.yaml](#4-scheduler_configyaml)
+  - [src/trainer.py](#srctrainerpy)
+  - [train_optuna.py](#train_optunapy)
+    - [작동 방식](#작동-방식)
+    - [결과](#결과)
+- [사용법](#사용법)
+- [Reference](#reference)
 
-**Custom search space 구성**
+**yaml 파일만 건드려서 실험을 편하게 하기 위해 Custom search space 구성**
 
 - 모듈 block(micro)는 탐색 ⭕
 - 모듈 block들의 조합 및 구성(macro) 탐색 ❌, 왼쪽 아래 구조(CIFAR10 Architecture)를 차용
@@ -54,9 +66,9 @@ input
 
 ```
 
-# 바뀐 점
+## 바뀐 점
 
-## optuna_config
+### optuna_config
 
 `Anchor`를 사용해 자주 사용하는 파라미터는 쉽게 수정할 수 있도록 함
 
@@ -89,7 +101,7 @@ Adam:
 ...
 ```
 
-### 1. base_config.yaml
+#### 1. base_config.yaml
 
 모델 학습의 기본적인 파라미터들을 설정하는 yaml 파일
 
@@ -97,7 +109,7 @@ Adam:
 
 - num_cells, normal_cells, reduction_cells, batch_size, epochs, optimizer, scheduler, criterion, img_size, num_layers, num_channels, num_units, dropout_rate, max_learning_rate, drop_path_rate, kernel_size
 
-### 2. module_config.yaml
+#### 2. module_config.yaml
 
 모듈에 대한 파라미터들을 설정하는 yaml 파일
 
@@ -108,7 +120,7 @@ Adam:
 - reduction_cells:
     - InvertedResidualv2, InvertedResidualv3, MaxPool, AvgPool
 
-### 3. optimizer_config.yaml
+#### 3. optimizer_config.yaml
 
 optimizer에 대한 파라미터들을 설정하는 yaml 파일
 
@@ -116,7 +128,7 @@ optimizer에 대한 파라미터들을 설정하는 yaml 파일
 
 - Adam (lr, betas), AdamW (lr, betas, weight_decay), SGD (lr)
 
-### 4. Scheduler_config.yaml
+#### 4. Scheduler_config.yaml
 
 scheduler에 대한 파라미터들을 설정하는 yaml 파일
 
@@ -125,9 +137,7 @@ scheduler에 대한 파라미터들을 설정하는 yaml 파일
 - StepLR (step_size, gamma, last_epoch), 
 CosineAnnealingLR (T_max, eta_min, last_epoch)
 
-# scr
-
-### trainer.py
+### src/trainer.py
 
 `TorchTrainer` object 생성시 `model_path`를 인자로 전해주면 model의 weight를 저장하고 전해주지 않으면 model의 weight를 저장하지 않는다.
 
@@ -148,13 +158,13 @@ trainer = TorchTrainer(
 )
 ```
 
-## train_optuna.py
+### train_optuna.py
 
-### 작동 방식
+#### 작동 방식
 
 `suggest_from_config(trial, config_dict, key, name)` 함수를 사용하여 입력된 config.yaml 파일에서 해당 key 인자를 가져와서 suggestion으로 바꿔줌.
 
-### 결과
+#### 결과
 
 1. save_all에 따라 trials 또는 best trials에 해당되는 모델 architecture
     - 저장 위치: `code/configs/optuna_model{mmdd_HHMM}/{i}`
@@ -170,23 +180,57 @@ trainer = TorchTrainer(
     - 파일 이름: `{mmdd_HHMM}_trial_{i}_best.pt`
     - 주의 사항: **각 trial**에 대해서 **f1값을 기준**으로 가장 좋은 모델을 선정합니다.
 
-# 사용법
+## 사용법
 
 - `train_optuna.py` 실행
     - code/optuna_cofig 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 train_optuna.py 실행
     ```
-    python train_optuna.py --n_trials ${탐색시도 횟수} --save_all ${모든 trials 저장여부} --save_model ${model weight 저장여부} --base ${base config 파일 경로} --module ${moduel config 파일 경로} --optimizer ${optimizer config 파일 경로} --scheduler ${scheduler config 파일 경로} --data ${data config 파일 경로}
-    # EX) python train_optuna.py --n_trials 10 --save_all True --save_model False --base configs/optuna_config/base_config.yaml
+    python train_optuna.py --n_trials ${탐색시도 횟수} \
+                           --save_all ${모든 trials 저장여부} \ 
+                           --save_model ${model weight 저장여부} \ 
+                           --base ${base config 파일 경로} \ 
+                           --module ${moduel config 파일 경로} \
+                           --optimizer ${optimizer config 파일 경로} \
+                           --scheduler ${scheduler config 파일 경로} \
+                           --data ${data config 파일 경로}
+    ```
+    - 예시
+    ```
+    # 예시
+    python train_optuna.py --n_trials 10 \
+                           --save_all True \ 
+                           --save_model False \
+                           --base configs/optuna_config/base_config.yaml
     ```
     
 - `train.py` 실행
     ```
-    python train.py --model ${모델 파일 경로} --data ${데이터셋 파일 경로}
-    # EX) python train.py --model configs/model/mobilenetv3.yaml --data configs/data/taco.yaml
+    python train.py --model ${모델 파일 경로} \
+                    --data ${데이터셋 파일 경로}
     ```
 
+    ```
+    # 예시
+    python train.py --model configs/model/mobilenetv3.yaml \
+                    --data configs/data/taco.yaml
+    ```
+- `inference.py` 실행
+    ```
+    python inference.py --model_config ${모델 yaml 경로} \ 
+                        --weight ${모델 weight 경로} \
+                        --img_root ${test 데이터 경로} \ 
+                        --data_config ${데이터 yaml 경로}
+    ```
 
-# Reference
+    ```
+    # 예시
+    python inference.py --model_config configs/model/mobilenetv3.yaml \ 
+                        --weight exp/2021-05-13_16-41-57/best.pt \
+                        --img_root /opt/ml/input/test/ \
+                        --data_config configs/data/taco.yaml
+    ```
+
+## Reference
 
 - `suggest_from_config` : [https://github.com/mbarbetti/optunapi](https://github.com/mbarbetti/optunapi)
 - `YAML file anchor 사용법` : [YAML - yjol_velog](https://velog.io/@yjok/YAML#:~:text=%EC%95%B5%EC%BB%A4%EB%8A%94%20%26%20%EB%A1%9C%20%EC%8B%9C%EC%9E%91%ED%95%98%EB%8A%94,%EC%9D%84%20%EC%B0%B8%EC%A1%B0%ED%95%A0%20%EC%88%98%20%EC%9E%88%EB%8B%A4)
