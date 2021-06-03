@@ -237,7 +237,9 @@ def objective(trial: optuna.trial.Trial) -> float:
     print(f"macs: {macs}")
 
     best_f1 = train_model(trial,model_instance)
+    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit = False)
     wandb.log({'f1':best_f1, 'MACs':macs})
+    run.finish()
     return best_f1, macs
 
 
@@ -356,9 +358,6 @@ if __name__ == '__main__':
     module_config = read_yaml(args.module) 
     optimizer_config = read_yaml(args.optimizer) 
     scheduler_config = read_yaml(args.scheduler) 
-
-    # wandb setting
-    wandb.init(project='OPT', name = cur_time , reinit = False)
 
     # Optuna study
     study = optuna.create_study(directions=["maximize", "minimize"])
