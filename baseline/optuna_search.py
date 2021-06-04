@@ -343,9 +343,9 @@ if __name__ == "__main__":
     module_config = read_yaml(args.module) 
     optimizer_config = read_yaml(args.optimizer) 
     scheduler_config = read_yaml(args.scheduler) 
-    
-    # DB setup
-    if args.study_name:
+      
+    if args.study_name: # when use database
+        # DB setup
         load_dotenv(verbose=True)
         DB_HOST = os.getenv("DB_HOST")
         DB_NAME = os.getenv("DB_NAME")
@@ -354,14 +354,18 @@ if __name__ == "__main__":
 
         optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
         storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-    
-    # Optuna study
-    study = optuna.create_study(storage=storage_name,
-                                study_name=args.study_name if args.study_name else None,
-                                load_if_exists=True if args.study_name else False,
-                                directions=["maximize", "minimize"])
 
-    study.optimize(objective, n_trials=args.n_trials)
+        # Optuna study
+        study = optuna.create_study(storage=storage_name,
+                                    study_name=args.study_name,
+                                    load_if_exists=True,
+                                    directions=["maximize", "minimize"])
+        study.optimize(objective, n_trials=args.n_trials)
+
+    else:
+        # Optuna study
+        study = optuna.create_study(directions=["maximize", "minimize"])
+        study.optimize(objective, n_trials=args.n_trials)
     
     # # Setting directory - for visualization
     # visualization_dir = "/opt/ml/output/visualization_result"
