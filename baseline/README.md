@@ -166,7 +166,7 @@ trainer = TorchTrainer(
 
 #### 작동 방식
 
-`suggest_from_config(trial, config_dict, key, name)` 함수를 사용하여 입력된 `config.yaml` 파일에서 해당 key 인자를 가져와서 suggestion으로 바꿔줌.
+- `suggest_from_config(trial, config_dict, key, name)` 함수를 사용하여 입력된 `config.yaml` 파일에서 해당 key 인자를 가져와서 suggestion으로 바꿔줌.
 
 #### 결과
 1. 자신의 server에서 실행한 모든 trials에 해당되는 모델 architecture
@@ -188,14 +188,14 @@ trainer = TorchTrainer(
 
 #### 작동방식
 
-`optuna_search.py`의 실행결과로 생성된 `model.yaml` 파일과 `hyperparameter.yaml` 파일을 입력으로 받아 학습시작
-model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wieght 부터 학습
+- `optuna_search.py`의 실행결과로 생성된 `model.yaml` 파일과 `hyperparameter.yaml` 파일을 입력으로 받아 학습시작
+- model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wieght 부터 학습
 
 #### 결과
 1. best epoch의 model weight
-  - 저장 위치: `output/optuna_exp/{mmdd_HHMM}`
-  - 파일 이름: `best.pt`
-  - 주의 사항: **각 trial**에 대해서 **f1값을 기준**으로 가장 좋은 모델을 선정합니다.
+    - 저장 위치: `output/optuna_exp/{mmdd_HHMM}`
+    - 파일 이름: `best.pt`
+    - 주의 사항: **각 trial**에 대해서 **f1값을 기준**으로 가장 좋은 모델을 선정합니다.
 
 ## 사용법
 
@@ -234,10 +234,12 @@ model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wi
                     --data configs/data/taco.yaml
     ```
 - `optuna_train.py` 실행
+    - **`model` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - **`hyperparam` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     ```
     python optuna_train.py --data ${데이터셋 파일 경로} \
-                           --model ${모델 파일 경로 (required)} \
-                           --hyperparam ${hyperparameter 파일 경로 (required)}
+                           --model ${모델 파일 경로} \
+                           --hyperparam ${hyperparameter 파일 경로}
                            --weight ${모델 weight 경로}
     ```
 
@@ -249,6 +251,10 @@ model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wi
                            --weight /opt/ml/output/optuna_exp/0604_1244_best.pt
     ```
 - `inference.py` 실행
+    - **`model_config` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - **`weight` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - **`img_root` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - **`data_config` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     ```
     python inference.py --dst ${제출 파일 저장할 디렉토리}
                         --model_config ${모델 yaml 경로} \ 
