@@ -302,7 +302,7 @@ if __name__ == "__main__":
         "--n_trials", default=10, type=int, help="optuna optimize n_trials"
     )
     parser.add_argument(
-        "--study_name", type=str, help="optuna study alias name"
+        "--study_name", default=None, type=str, help="optuna study alias name"
     )
     parser.add_argument(
         "--save_model", default=False, type=bool, help="choose save model or not save"
@@ -343,23 +343,29 @@ if __name__ == "__main__":
     module_config = read_yaml(args.module) 
     optimizer_config = read_yaml(args.optimizer) 
     scheduler_config = read_yaml(args.scheduler) 
-    
-    # DB setup
-    load_dotenv(verbose=True)
-    DB_HOST = os.getenv("DB_HOST")
-    DB_NAME = os.getenv("DB_NAME")
-    DB_USER = os.getenv("DB_USER")
-    DB_PASSWORD = os.getenv("DB_PASSWORD")
+      
+    if args.study_name: # when use database
+        # DB setup
+        load_dotenv(verbose=True)
+        DB_HOST = os.getenv("DB_HOST")
+        DB_NAME = os.getenv("DB_NAME")
+        DB_USER = os.getenv("DB_USER")
+        DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-    optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-    
-    # Optuna study
-    study = optuna.create_study(storage=storage_name,
-                                study_name=args.study_name,
-                                load_if_exists=True,
-                                directions=["maximize", "minimize"])
-    study.optimize(objective, n_trials=args.n_trials)
+        optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+        storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+
+        # Optuna study
+        study = optuna.create_study(storage=storage_name,
+                                    study_name=args.study_name,
+                                    load_if_exists=True,
+                                    directions=["maximize", "minimize"])
+        study.optimize(objective, n_trials=args.n_trials)
+
+    else:
+        # Optuna study
+        study = optuna.create_study(directions=["maximize", "minimize"])
+        study.optimize(objective, n_trials=args.n_trials)
     
     # # Setting directory - for visualization
     # visualization_dir = "/opt/ml/output/visualization_result"
