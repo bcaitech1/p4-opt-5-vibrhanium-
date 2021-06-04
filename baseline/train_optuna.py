@@ -271,7 +271,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     
     Args:
         trial: optuna trial object
-    Returns
+    Returns:
         float: Score value.
             whether to maximize, minimize will determined in optuna study setup.
     """
@@ -355,9 +355,9 @@ if __name__ == "__main__":
     storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
     
     # Optuna study
-    study = optuna.create_study(# storage=storage_name,
-                                # study_name=args.study_name,
-                                # load_if_exists=True,
+    study = optuna.create_study(storage=storage_name,
+                                study_name=args.study_name,
+                                load_if_exists=True,
                                 directions=["maximize", "minimize"])
     study.optimize(objective, n_trials=args.n_trials)
     
