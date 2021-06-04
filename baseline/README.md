@@ -11,6 +11,9 @@
   - [optuna_search.py](#optuna_searchpy)
     - [작동 방식](#작동-방식)
     - [결과](#결과)
+  - [optuna_train.py](#optuna_trainpy)
+    - [작동 방식](#작동-방식)
+    - [결과](#결과)
 - [사용법](#사용법)
 - [Reference](#reference)
 
@@ -185,7 +188,7 @@ trainer = TorchTrainer(
 
 #### 작동방식
 
-`optuna_searcy.py`의 실행결과로 생성된 `model.yaml` 파일과 `hyperparameter.yaml` 파일을 입력으로 받아 학습시작
+`optuna_search.py`의 실행결과로 생성된 `model.yaml` 파일과 `hyperparameter.yaml` 파일을 입력으로 받아 학습시작
 model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wieght 부터 학습
 
 #### 결과
@@ -230,9 +233,9 @@ model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wi
     python train.py --model configs/model/mobilenetv3.yaml \
                     --data configs/data/taco.yaml
     ```
-- `train_optuna.py` 실행
+- `optuna_train.py` 실행
     ```
-    python train_optuna.py --data ${데이터셋 파일 경로} \
+    python optuna_train.py --data ${데이터셋 파일 경로} \
                            --model ${모델 파일 경로 (required)} \
                            --hyperparam ${hyperparameter 파일 경로 (required)}
                            --weight ${모델 weight 경로}
@@ -240,7 +243,7 @@ model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wi
 
     ```
     # 예시
-    python train_optuna.py --data configs/data/taco.yaml \
+    python optuna_train.py --data configs/data/taco.yaml \
                            --model /opt/ml/input/config/optuna_model/0604_1244/0/0604_1244_0_model.yaml \
                            --hyperparam /opt/ml/input/config/optuna_model/0604_1244/0/0604_1244_0_hyperparameter.yaml
                            --weight /opt/ml/output/optuna_exp/0604_1244_best.pt
