@@ -146,8 +146,7 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
         Dict[str, Any]: Sampled hyperparam configs.
     """
     # search hyperparameter
-    # epochs = suggest_from_config(trial, base_config, 'epochs')
-    epochs = 1
+    epochs = suggest_from_config(trial, base_config, 'epochs')
     batch_size = suggest_from_config(trial, base_config, 'batch_size')
     img_size = suggest_from_config(trial, base_config, 'img_size')
     hyperparam_config = {
@@ -287,9 +286,9 @@ def objective(trial: optuna.trial.Trial) -> float:
     print(f"macs: {macs}")
 
     best_f1 = train_model(trial, model_instance, hyperparam_config)
-    # run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
-    # wandb.log({'f1':best_f1, 'MACs':macs})
-    # run.finish()
+    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
+    wandb.log({'f1':best_f1, 'MACs':macs})
+    run.finish()
     
     return best_f1, macs
 
