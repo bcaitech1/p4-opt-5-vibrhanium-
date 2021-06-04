@@ -130,11 +130,76 @@ def search_model(trial: optuna.trial.Trial) -> Dict[str, Any]:
     model_config["backbone"].append([1, "Dropout", [dropout_rate]])
     model_config["backbone"].append([1, "Linear", [num_class]])
 
+    # save model dict to .yaml file
+    save_config_dir = os.path.join(save_config_dir_base, str(trial.number))
+    os.makedirs(save_config_dir, exist_ok=True)
+    config_fn = f"{save_config_fn_base}_{trial.number}_model.yaml"
+    with open(os.path.join(save_config_dir, config_fn), "w") as f:
+        yaml.dump(model_config, f, default_flow_style=False)
+
     return model_config
 
 
+def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
+    """Search hyperparameter from user-specified search space.
+    Returns:
+        Dict[str, Any]: Sampled hyperparam configs.
+    """
+    # search hyperparameter
+    # epochs = suggest_from_config(trial, base_config, 'epochs')
+    epochs = 1
+    batch_size = suggest_from_config(trial, base_config, 'batch_size')
+    img_size = suggest_from_config(trial, base_config, 'img_size')
+    hyperparam_config = {
+        "epochs": epochs,
+        "batch_size": batch_size,
+        "img_size": img_size
+        }
+    
+    # optimizer
+    optimizer_name = suggest_from_config(trial, base_config, "optimizer")  # AdamW
+    optimizer_params = optimizer_config[optimizer_name].keys()  #lr, beta1, beta2
+    params_dict = {}
+    for param in optimizer_params: # lr, betas
+        if param == "betas":
+            beta1 = suggest_from_config(
+                trial, optimizer_config[optimizer_name], param, f"optimizer/{param}"
+            )  
+            beta2 = optimizer_config[optimizer_name][param]["beta2"]
+            params_dict["betas"] = (beta1, beta2)
+            continue
+
+        params_dict[param] = suggest_from_config(
+            trial, optimizer_config[optimizer_name], param, f"optimizer/{param}"
+        )
+    hyperparam_config["optimizer"] = optimizer_name
+    hyperparam_config["optimizer_params"] = params_dict
+    
+    # scheduler
+    scheduler_name = suggest_from_config(trial, base_config, "scheduler")  # CosineAnnealingLR
+    scheduler_params = scheduler_config[scheduler_name].keys()  # T_max eta_min last_epoch
+    params_dict = {}
+    for param in scheduler_params:
+        params_dict[param] = suggest_from_config(trial, scheduler_config[scheduler_name], param, f"scheduler/{param}")
+    hyperparam_config["scheduler"] = scheduler_name
+    hyperparam_config["scheduler_params"] = params_dict
+    
+    # criterion
+    criterion_name = suggest_from_config(trial, base_config, "criterion") 
+    hyperparam_config["criterion"] = criterion_name
+
+    # save hyper-parameter dict to .yaml file (dict -> yaml)
+    save_config_dir = os.path.join(save_config_dir_base, str(trial.number))
+    config_fn = f"{save_config_fn_base}_{trial.number}_hyperparameter.yaml"
+    with open(os.path.join(save_config_dir, config_fn), "w") as f:
+        yaml.dump(hyperparam_config, f, default_flow_style=False)
+
+    return hyperparam_config
+
+
 def train_model(trial,
-    model_instance: nn.Module
+    model_instance: nn.Module,
+    hyperparam_config: Dict[str, Any]
     ) -> nn.Module:
     """Create trainer and train.
     Args:
@@ -148,43 +213,23 @@ def train_model(trial,
     fp16 = data_config["FP16"] #floating point 16
     
     # search hyperparameter
-    epochs = suggest_from_config(trial, base_config, 'epochs')
-    batch_size = suggest_from_config(trial, base_config, 'batch_size')
+    epochs = hyperparam_config["epochs"]
+    batch_size = hyperparam_config["batch_size"]
     
-    # Sample optimizer
-    optimizer_name = suggest_from_config(trial, base_config, 'optimizer') ## AdamW
-    
-    opt_params = optimizer_config[optimizer_name].keys() #lr, beta1, beta2
-    temp_dict = {}
-    for p in opt_params: # lr, betas
-        if p == 'betas':
-            beta1 = suggest_from_config(
-                trial, optimizer_config[optimizer_name], p
-            )  
-            beta2 = optimizer_config[optimizer_name][p]['beta2']
-            temp_dict['betas'] = (beta1, beta2)
-            continue
-
-        temp_dict[p] = suggest_from_config(
-            trial, optimizer_config[optimizer_name], p
-        )
-
+    # optimizer
+    optimizer_name = hyperparam_config["optimizer"]
+    optimizer_params = hyperparam_config["optimizer_params"]
     optimizer = getattr(optim, optimizer_name)(
-        model_instance.parameters(), **temp_dict
+        model_instance.parameters(), **optimizer_params
     )
     
     # scheduler
-    scheduler_name = suggest_from_config(trial, base_config, 'scheduler') # CosineAnnealingLR
-    
-    sch_params = scheduler_config[scheduler_name].keys() # T_max eta_min last_epoch
-    temp_dict = {}
-    for s in sch_params:
-        temp_dict[s] = suggest_from_config(trial, scheduler_config[scheduler_name], s) # lr, beta1, beta2
-    
-    scheduler = getattr(lr_scheduler, scheduler_name)(optimizer=optimizer, **temp_dict) # dictionary unpacking
+    scheduler_name = hyperparam_config["scheduler"]
+    scheduler_params = hyperparam_config["scheduler_params"]
+    scheduler = getattr(lr_scheduler, scheduler_name)(optimizer=optimizer, **scheduler_params) # dictionary unpacking
     
     # criterion
-    criterion_name = suggest_from_config(trial, base_config, 'criterion') 
+    criterion_name = hyperparam_config["criterion"] 
     criterion = getattr(nn, criterion_name)()
 
     # Amp loss scaler
@@ -192,8 +237,8 @@ def train_model(trial,
         torch.cuda.amp.GradScaler() if fp16 and device != torch.device("cpu") else None
     )
     
-    data_config['IMG_SIZE'] = suggest_from_config(trial, base_config, 'img_size')
-    data_config['BATCH_SIZE'] = batch_size
+    data_config['IMG_SIZE'] = hyperparam_config["img_size"]
+    data_config['BATCH_SIZE'] = hyperparam_config["batch_size"]
     train_dl, val_dl, test_dl = create_dataloader(data_config)
     
     if args.save_model:
@@ -227,11 +272,12 @@ def objective(trial: optuna.trial.Trial) -> float:
     
     Args:
         trial: optuna trial object
-    Returns:
+    Returns
         float: Score value.
             whether to maximize, minimize will determined in optuna study setup.
     """
     model_config = search_model(trial)
+    hyperparam_config = search_hyperparam(trial)
 
     model_instance = Model(model_config, verbose=True)
     model_instance.model.to(device)
@@ -240,99 +286,24 @@ def objective(trial: optuna.trial.Trial) -> float:
     macs = calc_macs(model_instance.model, (3, data_config["IMG_SIZE"], data_config["IMG_SIZE"]))
     print(f"macs: {macs}")
 
-    best_f1 = train_model(trial, model_instance)
-    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
-    wandb.log({'f1':best_f1, 'MACs':macs})
-    run.finish()
+    best_f1 = train_model(trial, model_instance, hyperparam_config)
+    # run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
+    # wandb.log({'f1':best_f1, 'MACs':macs})
+    # run.finish()
     
     return best_f1, macs
 
 
-def make_model_config(trial, config_fn):
-    """make model config file
-
-    Args:
-        trial (Dict[str, Any]): trial
-        config_fn (str): config file name
-    """
-    # Sample Normal Cell(NC)
-    num_cells = base_config['num_cells']
-    n_nc = num_cells['value']
-    model_config = {
-        'input_channel': 3,
-        'depth_multiple': 1.0,
-        'width_multiple': 1.0,
-        'backbone': None,
-        }
-    dropout_rate = suggest_from_config(trial, base_config, "dropout_rate")
-
-    backbone = []
-    for i in range(n_nc):
-        if i == (n_nc-1):
-            cell_types = ['normal']
-        else:
-            cell_types = ['normal', 'reduction']
-            
-        # trial.params의 key 들 중 normal_cells_i 별로 추출
-        for cell_type in cell_types:
-            p = re.compile(f'{cell_type}_cells_{i}/')
-            matched_keys = []
-            for name in trial.params.keys():
-                if p.match(name):
-                    matched_keys.append(name)
-
-            # 찾은 key에 해당하는 값 추출
-            cell = [trial.params[f'n{i+1}_repeat'], trial.params[f'{cell_type}_cells_{i}']]
-            cell_args = []
-            for name in matched_keys:
-                cell_args.append(trial.params[name])
-            cell.append(cell_args)
-            backbone.append(cell)
-
-    model_config['backbone'] = backbone
-    model_config["backbone"].append([1, "GlobalAvgPool", []])
-    model_config["backbone"].append([1, "Flatten", []])
-    model_config["backbone"].append([1, "Dropout", [dropout_rate]])
-    model_config["backbone"].append([1, "Linear", [num_class]])
-
-    with open(os.path.join(save_config_dir, config_fn), "w") as f:
-        yaml.dump(model_config, f, default_flow_style=False)
-
-
-def make_hyperparam_config(trial, config_fn):
-    """make model config file
-
-    Args:
-        trial (Dict[str, Any]): trial
-        config_fn (str): config file name
-    """
-    hyperparams = [
-        'epochs', 'batch_size', 'optimizer', 'lr', 
-        'betas', 'weight_decay', 'scheduler', 'T_max', 
-        'eta_min', 'last_epoch', 'criterion', 'img_size'
-        ]
-
-    hyperparams_config = {}
-    for key, value in trial.params.items():
-        if key in hyperparams:
-            hyperparams_config[key] = value
-
-    with open(os.path.join(save_config_dir, config_fn), "w") as f:
-        yaml.dump(hyperparams_config, f, default_flow_style=False)
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Setting base
-    cur_time = datetime.now().strftime('%m%d_%H%M')
+    cur_time = datetime.now().strftime("%m%d_%H%M")
+    print("cur_time", cur_time)
     parser = argparse.ArgumentParser(description="Train model using optuna.")
     parser.add_argument(
         "--n_trials", default=10, type=int, help="optuna optimize n_trials"
     )
     parser.add_argument(
         "--study_name", type=str, help="optuna study alias name"
-    )
-    parser.add_argument(
-        "--save_all", default=True, type=bool, help="choose all trials save or best trials save"
     )
     parser.add_argument(
         "--save_model", default=False, type=bool, help="choose save model or not save"
@@ -360,10 +331,14 @@ if __name__ == '__main__':
         save_model_dir_base = f"./optuna_exp/{cur_time}"
         save_model_fn_base = cur_time
 
+    # Setting directory - for save [best/all] trials model config
+    save_config_dir_base = f"/opt/ml/input/config/optuna_model/{cur_time}"
+    save_config_fn_base = cur_time
+
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     num_class = 9
 
-    # Create config file
+    # Create config
     data_config = read_yaml(args.data)
     base_config = read_yaml(args.base)
     module_config = read_yaml(args.module) 
@@ -381,38 +356,16 @@ if __name__ == '__main__':
     storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
     
     # Optuna study
-    study = optuna.create_study(storage=storage_name,
-                                study_name=args.study_name,
-                                load_if_exists=True,
+    study = optuna.create_study(# storage=storage_name,
+                                # study_name=args.study_name,
+                                # load_if_exists=True,
                                 directions=["maximize", "minimize"])
     study.optimize(objective, n_trials=args.n_trials)
-
-    # Setting directory - for save [best/all] trials model config
-    save_config_dir_base = f"/opt/ml/input/config/optuna_model/{cur_time}"
-    save_config_fn_base = cur_time
     
     # Setting directory - for visualization
-    # visualization_dir = "./visualization_result"
-    # os.makedirs(visualization_dir, exist_ok=True)
-
-    # Save [best/all] trials model architecture and hyper-parameter
-    save_all = args.save_all # if True, save all trial else, save best trial
-    if save_all:
-        trials = study.trials
-        config_fn_base = f"{save_config_fn_base}_trials"
-    else:
-        trials = study.best_trials
-        config_fn_base = f"{save_config_fn_base}_best_trials"
-        
-    for i, trial in enumerate(trials):
-        save_config_dir = os.path.join(save_config_dir_base, str(i))
-        os.makedirs(save_config_dir, exist_ok=True)
-
-        config_fn = f"{config_fn_base}_{i}_model.yaml"
-        make_model_config(trial, config_fn)
-        config_fn = f"{config_fn_base}_{i}_hyperparam.yaml"
-        make_hyperparam_config(trial, config_fn)
+    visualization_dir = "./visualization_result"
+    os.makedirs(visualization_dir, exist_ok=True)
 
     # Visualization
-    # fig = optuna.visualization.plot_pareto_front(study)
-    # fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}_pareto_front.html"))
+    fig = optuna.visualization.plot_pareto_front(study)
+    fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}_pareto_front.html"))
