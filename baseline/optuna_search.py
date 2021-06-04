@@ -362,7 +362,7 @@ if __name__ == "__main__":
     study.optimize(objective, n_trials=args.n_trials)
     
     # Setting directory - for visualization
-    visualization_dir = "./visualization_result"
+    visualization_dir = "/opt/ml/output/visualization_result"
     os.makedirs(visualization_dir, exist_ok=True)
 
     # Visualization
