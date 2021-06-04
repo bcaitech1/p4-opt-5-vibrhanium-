@@ -157,7 +157,7 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
     
     # optimizer
     optimizer_name = suggest_from_config(trial, base_config, "optimizer")  # AdamW
-    optimizer_params = optimizer_config[optimizer_name].keys()  #lr, beta1, beta2
+    optimizer_params = optimizer_config[optimizer_name].keys()  #lr, beta1, beta2s
     params_dict = {}
     for param in optimizer_params: # lr, betas
         if param == "betas":
@@ -361,10 +361,10 @@ if __name__ == "__main__":
                                 directions=["maximize", "minimize"])
     study.optimize(objective, n_trials=args.n_trials)
     
-    # Setting directory - for visualization
-    visualization_dir = "/opt/ml/output/visualization_result"
-    os.makedirs(visualization_dir, exist_ok=True)
+    # # Setting directory - for visualization
+    # visualization_dir = "/opt/ml/output/visualization_result"
+    # os.makedirs(visualization_dir, exist_ok=True)
 
-    # Visualization
-    fig = optuna.visualization.plot_pareto_front(study)
-    fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}_pareto_front.html"))
+    # # Visualization
+    # fig = optuna.visualization.plot_pareto_front(study)
+    # fig.write_html(os.path.join(visualization_dir, f"{save_config_fn_base}_pareto_front.html"))
