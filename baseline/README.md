@@ -8,7 +8,10 @@
     - [3. optimizer_config.yaml](#3-optimizer_configyaml)
     - [4. Scheduler_config.yaml](#4-scheduler_configyaml)
   - [src/trainer.py](#srctrainerpy)
-  - [train_optuna.py](#train_optunapy)
+  - [optuna_search.py](#optuna_searchpy)
+    - [작동 방식](#작동-방식)
+    - [결과](#결과)
+  - [optuna_train.py](#optuna_trainpy)
     - [작동 방식](#작동-방식)
     - [결과](#결과)
 - [사용법](#사용법)
@@ -62,7 +65,8 @@ input
 ├── tests
 │   └── testmodelparser.py
 ├── train.py
-└── train_optuna.py
+├── train_optuna.py
+└── optuna_search.py
 
 ```
 
@@ -142,7 +146,7 @@ CosineAnnealingLR (T_max, eta_min, last_epoch)
 `TorchTrainer` object 생성시 `model_path`를 인자로 전해주면 model의 weight를 저장하고 전해주지 않으면 model의 weight를 저장하지 않는다.
 
 ```python
-# train_optuna.py
+# optuna_search.py
 
 # Create trainer
 trainer = TorchTrainer(
@@ -158,35 +162,48 @@ trainer = TorchTrainer(
 )
 ```
 
-### train_optuna.py
+### optuna_search.py
 
 #### 작동 방식
 
-`suggest_from_config(trial, config_dict, key, name)` 함수를 사용하여 입력된 `config.yaml` 파일에서 해당 key 인자를 가져와서 suggestion으로 바꿔줌.
+- `suggest_from_config(trial, config_dict, key, name)` 함수를 사용하여 입력된 `config.yaml` 파일에서 해당 key 인자를 가져와서 suggestion으로 바꿔줌.
 
 #### 결과
-
-1. save_all에 따라 trials 또는 best trials에 해당되는 모델 architecture
+1. 자신의 server에서 실행한 모든 trials에 해당되는 모델 architecture
     - 저장 위치: `input/config/optuna_model{mmdd_HHMM}/{i}`
-    - 파일 이름: `{mmdd_HHMM}_(best_)trials_{i}_model.yaml`
-3. save_all에 따라 trials 또는 best trials에 해당되는 hyperparameter 
+    - 파일 이름: `model.yaml`
+3. 자신의 server에서 실행한 모든 trials에 해당되는 hyperparameter 
     - 저장 위치: `input/config/optuna_model/{mmdd_HHMM}/{i}`
-    - 파일 이름: `{mmdd_HHMM}_(best_)trials_{i}_hyperparam.yaml`
+    - 파일 이름: `hyperparameter.yaml`
 4. visualization된 파일
     - 저장 위치: `code/visualization_result`
     - 파일 이름: `{mmdd_HHMM}_pareto_front.html`
 5. [옵션] best epoch의 model weight
     - 저장 위치: `code/optuna_exp/{mmdd_HHMM}/{i}`
-    - 파일 이름: `{mmdd_HHMM}_trial_{i}_best.pt`
+    - 파일 이름: `best.pt`
+    - 주의 사항: **각 trial**에 대해서 **f1값을 기준**으로 가장 좋은 모델을 선정합니다.
+
+
+### optuna_train.py
+
+#### 작동방식
+
+- `optuna_search.py`의 실행결과로 생성된 `model.yaml` 파일과 `hyperparameter.yaml` 파일을 입력으로 받아 학습시작
+- model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wieght 부터 학습
+
+#### 결과
+1. best epoch의 model weight
+    - 저장 위치: `output/optuna_exp/{mmdd_HHMM}`
+    - 파일 이름: `best.pt`
     - 주의 사항: **각 trial**에 대해서 **f1값을 기준**으로 가장 좋은 모델을 선정합니다.
 
 ## 사용법
 
-- `train_optuna.py` 실행
-    - `input/config/optuna_config` 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 `train_optuna.py` 실행
+- `optuna_search.py` 실행
+    - `input/config/optuna_config` 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 `optuna_search.py` 실행
     - **`study_name` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     ```
-    python train_optuna.py --n_trials ${탐색시도 횟수} \
+    python optuna_search.py --n_trials ${탐색시도 횟수} \
                            --study_name ${optuna study의 별칭(이름)} \
                            --save_all ${모든 trials 저장여부} \ 
                            --save_model ${model weight 저장여부} \ 
@@ -199,13 +216,12 @@ trainer = TorchTrainer(
     - 예시
     ```
     # 예시
-    python train_optuna.py --n_trials 10 \
+    python optuna_search.py --n_trials 10 \
                            --study_name my_study \
                            --save_all True \ 
                            --save_model False \
                            --base configs/optuna_config/base_config.yaml
     ```
-    
 - `train.py` 실행
     ```
     python train.py --model ${모델 파일 경로} \
@@ -217,9 +233,31 @@ trainer = TorchTrainer(
     python train.py --model configs/model/mobilenetv3.yaml \
                     --data configs/data/taco.yaml
     ```
-- `inference.py` 실행
+- `optuna_train.py` 실행
+    - **`model` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - **`hyperparam` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     ```
-    python inference.py --model_config ${모델 yaml 경로} \ 
+    python optuna_train.py --data ${데이터셋 파일 경로} \
+                           --model ${모델 파일 경로} \
+                           --hyperparam ${hyperparameter 파일 경로}
+                           --weight ${모델 weight 경로}
+    ```
+
+    ```
+    # 예시
+    python optuna_train.py --data configs/data/taco.yaml \
+                           --model /opt/ml/input/config/optuna_model/0604_1244/0/0604_1244_0_model.yaml \
+                           --hyperparam /opt/ml/input/config/optuna_model/0604_1244/0/0604_1244_0_hyperparameter.yaml
+                           --weight /opt/ml/output/optuna_exp/0604_1244_best.pt
+    ```
+- `inference.py` 실행
+    - **`model_config` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - **`weight` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - **`img_root` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - **`data_config` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    ```
+    python inference.py --dst ${제출 파일 저장할 디렉토리}
+                        --model_config ${모델 yaml 경로} \ 
                         --weight ${모델 weight 경로} \
                         --img_root ${test 데이터 경로} \ 
                         --data_config ${데이터 yaml 경로}
@@ -227,7 +265,8 @@ trainer = TorchTrainer(
 
     ```
     # 예시
-    python inference.py --model_config configs/model/mobilenetv3.yaml \ 
+    python inference.py --dst /opt/ml/output \
+                        --model_config configs/model/mobilenetv3.yaml \ 
                         --weight exp/2021-05-13_16-41-57/best.pt \
                         --img_root /opt/ml/input/test/ \
                         --data_config configs/data/taco.yaml
