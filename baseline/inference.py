@@ -33,12 +33,12 @@ def get_dataloader(img_root: str, data_config: str) -> DataLoader:
     # Load yaml
     data_config = read_yaml(data_config)
 
-    transform_test_args = data_confg["AUG_TEST_PARAMS"] if data_config.get("AUG_TEST_PARAMS") else None
+    transform_test_args = data_config["AUG_TEST_PARAMS"] if data_config.get("AUG_TEST_PARAMS") else None
     # Transformation for test
     transform_test = getattr(
         __import__("src.augmentation.policies", fromlist=[""]),
         data_config["AUG_TEST"],
-    )(dataset=data_config["DATASET"], img_size=data_config["IMG_SIZE"])
+    )(dataset=data_config["DATASET"], img_size=hyperparam_config["img_size"])
 
     dataset = CustomImageFolder(root=img_root, transform=transform_test)
     dataloader = DataLoader(
@@ -82,13 +82,17 @@ if __name__ == "__main__":
         "--data_config", required=True, type=str, help="dataconfig used for training."
     )
     parser.add_argument(
-	"--img_root", required=True, type=str, help="image folder root. e.g) 'data/test'"
+	    "--img_root", required=True, type=str, help="image folder root. e.g) 'data/test'"
+    )
+    parser.add_argument(
+	    "--hyperparam", required=True, type=str, help="hyperparamter config path"
     )
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    hyperparam_config = read_yaml(args.hyperparam)
    
-    # prepare datalaoder
+    # prepare dataloader
     dataloader = get_dataloader(img_root=args.img_root, data_config=args.data_config)
 
     # prepare model
