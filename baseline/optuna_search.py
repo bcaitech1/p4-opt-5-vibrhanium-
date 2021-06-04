@@ -327,7 +327,7 @@ if __name__ == "__main__":
 
     # Setting directory - for save best trials model weight
     if args.save_model:
-        save_model_dir_base = f"./optuna_exp/{cur_time}"
+        save_model_dir_base = f"/opt/ml/input/optuna_exp/{cur_time}"
         save_model_fn_base = cur_time
 
     # Setting directory - for save [best/all] trials model config

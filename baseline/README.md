@@ -176,10 +176,10 @@ trainer = TorchTrainer(
     - 저장 위치: `input/config/optuna_model/{mmdd_HHMM}/{i}`
     - 파일 이름: `hyperparameter.yaml`
 4. visualization된 파일
-    - 저장 위치: `code/visualization_result`
+    - 저장 위치: `output/visualization_result`
     - 파일 이름: `{mmdd_HHMM}_pareto_front.html`
 5. [옵션] best epoch의 model weight
-    - 저장 위치: `code/optuna_exp/{mmdd_HHMM}/{i}`
+    - 저장 위치: `input/optuna_exp/{mmdd_HHMM}/{i}`
     - 파일 이름: `best.pt`
     - 주의 사항: **각 trial**에 대해서 **f1값을 기준**으로 가장 좋은 모델을 선정합니다.
 
