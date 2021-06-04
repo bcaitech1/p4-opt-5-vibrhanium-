@@ -1,4 +1,6 @@
 # Anchor
+out_channels_low  : &out_channels_low   8
+out_channels_high : &out_channels_high  16
 kernel_size_low   : &kernel_size_low    3
 kernel_size_high  : &kernel_size_high   5
 
@@ -12,8 +14,8 @@ normal_cells:
     out_channels:
       name    : out_channels
       type    : int
-      low     : 8
-      high    : 64
+      low     : *out_channels_low
+      high    : *out_channels_high
       step    : 8
 
     kernel_size : 
@@ -43,8 +45,8 @@ normal_cells:
     out_channels:
       name    : out_channels
       type    : int
-      low     : 8
-      high    : 64
+      low     : *out_channels_low
+      high    : *out_channels_high
       step    : 8
 
     kernel_size : 
@@ -73,8 +75,8 @@ normal_cells:
     out_channels:
       name    : out_channels
       type    : int
-      low     : 8
-      high    : 64
+      low     : *out_channels_low
+      high    : *out_channels_high
       step    : 8
 
     shortcut : 
@@ -106,8 +108,8 @@ normal_cells:
     out_channels:
       name    : out_channels
       type    : int
-      low     : 8
-      high    : 64
+      low     : *out_channels_low
+      high    : *out_channels_high
       step    : 8
       
     expand_ratio  : 0.5
@@ -142,8 +144,8 @@ reduction_cells:
     out_channels:
       name    : out_channels
       type    : int
-      low     : 8
-      high    : 64
+      low     : *out_channels_low
+      high    : *out_channels_high
       step    : 8
       
     expand_ratio  : 0.5
@@ -169,8 +171,8 @@ reduction_cells:
     out_channels:
       name    : out_channels
       type    : int
-      low     : 8
-      high    : 64
+      low     : *out_channels_low
+      high    : *out_channels_high
       step    : 8
 
     use_se  : 
