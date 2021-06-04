@@ -243,7 +243,7 @@ def train_model(trial,
     if args.save_model:
         save_model_dir = os.path.join(save_model_dir_base, str(trial.number))
         os.makedirs(save_model_dir, exist_ok=True)
-        model_fn = f"{save_model_fn_base}_trial_{trial.number}_best.pt"
+        model_fn = "best.pt"
         model_path = os.path.join(save_model_dir, model_fn)
     else:
         model_path = None
