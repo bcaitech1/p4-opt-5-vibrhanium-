@@ -302,7 +302,7 @@ if __name__ == "__main__":
         "--n_trials", default=10, type=int, help="optuna optimize n_trials"
     )
     parser.add_argument(
-        "--study_name", type=str, help="optuna study alias name"
+        "--study_name", default=None, type=str, help="optuna study alias name"
     )
     parser.add_argument(
         "--save_model", default=False, type=bool, help="choose save model or not save"
@@ -345,20 +345,22 @@ if __name__ == "__main__":
     scheduler_config = read_yaml(args.scheduler) 
     
     # DB setup
-    load_dotenv(verbose=True)
-    DB_HOST = os.getenv("DB_HOST")
-    DB_NAME = os.getenv("DB_NAME")
-    DB_USER = os.getenv("DB_USER")
-    DB_PASSWORD = os.getenv("DB_PASSWORD")
+    if args.study_name:
+        load_dotenv(verbose=True)
+        DB_HOST = os.getenv("DB_HOST")
+        DB_NAME = os.getenv("DB_NAME")
+        DB_USER = os.getenv("DB_USER")
+        DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-    optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+        optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+        storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
     
     # Optuna study
     study = optuna.create_study(storage=storage_name,
-                                study_name=args.study_name,
-                                load_if_exists=True,
+                                study_name=args.study_name if args.study_name else None,
+                                load_if_exists=True if args.study_name else False,
                                 directions=["maximize", "minimize"])
+
     study.optimize(objective, n_trials=args.n_trials)
     
     # # Setting directory - for visualization
