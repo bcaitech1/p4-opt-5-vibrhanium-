@@ -2,16 +2,20 @@
 - Author: Junghoon Kim
 - Contact: placidus36@gmail.com
 """
+import os
 import json
 import argparse
+
 import torch
-import os
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
+from tqdm import tqdm
+
 from src.model import Model
 from src.augmentation.policies import simple_augment_test
 from src.utils.common import read_yaml
 from src.utils.inference_utils import run_model
+from src.utils.decompose import decompose
 
 CLASSES = ['Battery', 'Clothing', 'Glass', 'Metal', 'Paper', 'Paperpack', 'Plastic', 'Plasticbag', 'Styrofoam']
 
@@ -42,19 +46,20 @@ def get_dataloader(img_root: str, data_config: str) -> DataLoader:
 
     dataset = CustomImageFolder(root=img_root, transform=transform_test)
     dataloader = DataLoader(
-	dataset=dataset,
-	batch_size=1,
-	num_workers=8
+        dataset=dataset,
+        batch_size=1,
+        num_workers=8
     )
     return dataloader
 
 @torch.no_grad()
 def inference(model, dataloader, dst_path: str):
     result = {}
+    submission_csv = {}
+
     model = model.to(device)
     model.eval()
-    submission_csv = {}
-    for img, _, fname in dataloader:
+    for img, _, fname in tqdm(dataloader):
         img = img.to(device)
         pred, enc_data = run_model(model, img)
         pred = torch.argmax(pred)
@@ -63,9 +68,14 @@ def inference(model, dataloader, dst_path: str):
     result["macs"] = enc_data
     result["submission"] = submission_csv
     j = json.dumps(result, indent=4)
+    
+    os.makedirs(dst_path, exist_ok=True)
     save_path = os.path.join(dst_path, 'submission.csv')
+    
     with open(save_path, 'w') as outfile:
         json.dump(result, outfile)
+    print("Inference complete.")
+    print(f"SAVE PATH: {save_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Submit.")
@@ -82,10 +92,13 @@ if __name__ == "__main__":
         "--data_config", required=True, type=str, help="dataconfig used for training."
     )
     parser.add_argument(
+	    "--hyperparam", required=True, type=str, help="hyperparamter config path"
+    )    
+    parser.add_argument(
 	    "--img_root", required=True, type=str, help="image folder root. e.g) 'data/test'"
     )
     parser.add_argument(
-	    "--hyperparam", required=True, type=str, help="hyperparamter config path"
+        "--decompose", default=False, type=bool, help="whether apply decomposition to convolution layers"
     )
     args = parser.parse_args()
 
@@ -98,6 +111,13 @@ if __name__ == "__main__":
     # prepare model
     model_instance = Model(args.model_config, verbose=True)
     model_instance.model.load_state_dict(torch.load(args.weight, map_location=torch.device('cpu')))
+
+    print(model_instance.model)
+    # apply tensor decomposition to conv layers
+    # Applicable conditions: kernel size 3 or higher, groups 1
+    if args.decompose:
+        model_instance.model = decompose(model_instance.model)
+    print(model_instance.model)
 
     # inference
     inference(model_instance.model, dataloader, args.dst)
