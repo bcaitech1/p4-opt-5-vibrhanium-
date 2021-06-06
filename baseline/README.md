@@ -12,8 +12,8 @@
     - [작동 방식](#작동-방식)
     - [결과](#결과)
   - [optuna_train.py](#optuna_trainpy)
-    - [작동 방식](#작동-방식)
-    - [결과](#결과)
+    - [작동방식](#작동방식)
+    - [결과](#결과-1)
 - [사용법](#사용법)
 - [Reference](#reference)
 
@@ -189,7 +189,7 @@ trainer = TorchTrainer(
 #### 작동방식
 
 - `optuna_search.py`의 실행결과로 생성된 `model.yaml` 파일과 `hyperparameter.yaml` 파일을 입력으로 받아 학습시작
-- model wiehgt가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 wieght 부터 학습
+- model weight가 저장된 pt 파일을 `--weight` 인자로 줄 경우 해당 weight 부터 학습
 
 #### 결과
 1. best epoch의 model weight
@@ -201,26 +201,26 @@ trainer = TorchTrainer(
 
 - `optuna_search.py` 실행
     - `input/config/optuna_config` 폴더 아래 yaml 파일들을 원하는 파라미터로 수정한 후 `optuna_search.py` 실행
-    - **`study_name` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - `study_name` argument를 주지 않을 경우 데이터베이스 없이 로컬 메모리 데이터만으로 학습을 진행합니다.
     ```
     python optuna_search.py --n_trials ${탐색시도 횟수} \
-                           --study_name ${optuna study의 별칭(이름)} \
-                           --save_all ${모든 trials 저장여부} \ 
-                           --save_model ${model weight 저장여부} \ 
-                           --base ${base config 파일 경로} \ 
-                           --module ${moduel config 파일 경로} \
-                           --optimizer ${optimizer config 파일 경로} \
-                           --scheduler ${scheduler config 파일 경로} \
-                           --data ${data config 파일 경로}
+                            --study_name ${optuna study의 별칭(이름)} \
+                            --save_all ${모든 trials 저장여부} \ 
+                            --save_model ${model weight 저장여부} \ 
+                            --base ${base config 파일 경로} \ 
+                            --module ${moduel config 파일 경로} \
+                            --optimizer ${optimizer config 파일 경로} \
+                            --scheduler ${scheduler config 파일 경로} \
+                            --data ${data config 파일 경로}
     ```
     - 예시
     ```
     # 예시
     python optuna_search.py --n_trials 10 \
-                           --study_name my_study \
-                           --save_all True \ 
-                           --save_model False \
-                           --base configs/optuna_config/base_config.yaml
+                            --study_name my_study \
+                            --save_all True \ 
+                            --save_model False \
+                            --base configs/optuna_config/base_config.yaml
     ```
 - `train.py` 실행
     ```
@@ -236,10 +236,11 @@ trainer = TorchTrainer(
 - `optuna_train.py` 실행
     - **`model` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     - **`hyperparam` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
+    - 
     ```
     python optuna_train.py --data ${데이터셋 파일 경로} \
                            --model ${모델 파일 경로} \
-                           --hyperparam ${hyperparameter 파일 경로}
+                           --hyperparam ${hyperparameter 파일 경로} \
                            --weight ${모델 weight 경로}
     ```
 
@@ -247,7 +248,7 @@ trainer = TorchTrainer(
     # 예시
     python optuna_train.py --data configs/data/taco.yaml \
                            --model /opt/ml/input/config/optuna_model/0604_1244/0/0604_1244_0_model.yaml \
-                           --hyperparam /opt/ml/input/config/optuna_model/0604_1244/0/0604_1244_0_hyperparameter.yaml
+                           --hyperparam /opt/ml/input/config/optuna_model/0604_1244/0/0604_1244_0_hyperparameter.yaml \
                            --weight /opt/ml/output/optuna_exp/0604_1244_best.pt
     ```
 - `inference.py` 실행
@@ -256,20 +257,24 @@ trainer = TorchTrainer(
     - **`img_root` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     - **`data_config` argument는 default 값이 없으므로 반드시 직접 설정해주어야 합니다.**
     ```
-    python inference.py --dst ${제출 파일 저장할 디렉토리}
-                        --model_config ${모델 yaml 경로} \ 
+    python inference.py --dst ${제출 파일 저장할 디렉토리} \
                         --weight ${모델 weight 경로} \
+                        --model_config ${모델 yaml 경로} \ 
+                        --data_config ${데이터 yaml 경로} \
+                        --hyperparam ${hyperparam yaml 경로} \
                         --img_root ${test 데이터 경로} \ 
-                        --data_config ${데이터 yaml 경로}
+                        --decompose ${텐서 분해 여부}
     ```
 
     ```
     # 예시
     python inference.py --dst /opt/ml/output \
-                        --model_config configs/model/mobilenetv3.yaml \ 
-                        --weight exp/2021-05-13_16-41-57/best.pt \
-                        --img_root /opt/ml/input/test/ \
-                        --data_config configs/data/taco.yaml
+                        --weight /opt/ml/input/optuna_exp/0604_2353/70/best.pt \
+                        --model_config /opt/ml/input/config/optuna_model/0604_2353/70/0604_2353_70_model.yaml \
+                        --data_config configs/data/taco.yaml \
+                        --hyperparam /opt/ml/input/config/optuna_model/0604_2353/70/0604_2353_70_hyperparameter.yaml \
+                        --img_root /opt/ml/input/data/test/ \
+                        --decompose False
     ```
 
 ## Reference
