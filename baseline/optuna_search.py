@@ -291,7 +291,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     model_instance.model.to(device)
 
     # Calc macs
-    macs = calc_macs(model_instance.model, (3, data_config["IMG_SIZE"], data_config["IMG_SIZE"]))
+    macs = calc_macs(model_instance.model, (3, hyperparam_config["img_size"], hyperparam_config["img_size"]))
     print(f"macs: {macs}")
 
     best_f1 = train_model(trial, model_instance, hyperparam_config)
@@ -304,7 +304,6 @@ def objective(trial: optuna.trial.Trial) -> float:
     
     return LBscore
 
-
 if __name__ == "__main__":
     # Setting base
     cur_time = datetime.now().strftime("%m%d_%H%M")
@@ -314,7 +313,7 @@ if __name__ == "__main__":
         "--n_trials", default=10, type=int, help="optuna optimize n_trials"
     )
     parser.add_argument(
-        "--study_name", type=str, help="optuna study alias name"
+        "--study_name", default=None, type=str, help="optuna study alias name"
     )
     parser.add_argument(
         "--save_model", default=False, type=bool, help="choose save model or not save"
@@ -339,7 +338,7 @@ if __name__ == "__main__":
 
     # Setting directory - for save best trials model weight
     if args.save_model:
-        save_model_dir_base = f"/opt/ml/input/optuna_exp/{cur_time}"
+        save_model_dir_base = f"/opt/ml/input/config/optuna_model/{cur_time}"
         save_model_fn_base = cur_time
 
     # Setting directory - for save [best/all] trials model config
@@ -355,23 +354,30 @@ if __name__ == "__main__":
     module_config = read_yaml(args.module) 
     optimizer_config = read_yaml(args.optimizer) 
     scheduler_config = read_yaml(args.scheduler) 
-    
-    # DB setup
-    load_dotenv(verbose=True)
-    DB_HOST = os.getenv("DB_HOST")
-    DB_NAME = os.getenv("DB_NAME")
-    DB_USER = os.getenv("DB_USER")
-    DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-    optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
-    storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
-    
-    # Optuna study
-    study = optuna.create_study(storage=storage_name,
-                                study_name=args.study_name,
-                                load_if_exists=True,
-                                directions=["maximize", "minimize"])
-    study.optimize(objective, n_trials=args.n_trials)
+    if args.study_name: # when use database
+        # DB setup
+        load_dotenv(verbose=True)
+        DB_HOST = os.getenv("DB_HOST")
+        DB_NAME = os.getenv("DB_NAME")
+        DB_USER = os.getenv("DB_USER")
+        DB_PASSWORD = os.getenv("DB_PASSWORD")
+
+        optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+        storage_name = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+
+        # Optuna study
+        study = optuna.create_study(storage=storage_name,
+                                    study_name=args.study_name,
+                                    load_if_exists=True,
+                                    directions=["maximize", "minimize"])
+        study.optimize(objective, n_trials=args.n_trials)
+
+    else:
+        # Optuna study
+        study = optuna.create_study(directions=["maximize", "minimize"])
+        study.optimize(objective, n_trials=args.n_trials)
+
     
     # # Setting directory - for visualization
     # visualization_dir = "/opt/ml/output/visualization_result"
