@@ -36,3 +36,19 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def get_LBscore(f1, macs): # 낮을수록 좋음
+    # 지금 식으로는 optuna를 최적화할 수 없다.
+    # if f1 < 0.5:  
+    #     score = 1.0
+    # elif f1 < 0.8342: 
+    #     score = (1 - f1 / 0.8342)
+    # else:
+    #     score = 0.5 * (1 - f1 / 0.8342)
+    if f1 < 0.8342: 
+        score = (1 - f1 / 0.8342)
+    else:
+        score = 0.5 * (1 - f1 / 0.8342)
+    score += macs / 13863553
+    return score
