@@ -115,6 +115,8 @@ if __name__ == "__main__":
     model_config = read_yaml(cfg=args.model)
     data_config = read_yaml(cfg=args.data)
     hyperparam_config = read_yaml(cfg=args.hyperparam)
+    data_config['IMG_SIZE'] = hyperparam_config["img_size"]
+    data_config['BATCH_SIZE'] = hyperparam_config["batch_size"]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
