@@ -32,7 +32,7 @@ def train(
 ) -> Tuple[float, float, float]:
     """Train."""
     model_instance = Model(model_config, verbose=True)
-    model_path = os.path.join(log_dir, "best.pt")
+    model_path = os.path.join(log_dir, "train_best.pt")
     print(f"Model save path: {model_path}")
         
     if args.weight:
@@ -115,9 +115,12 @@ if __name__ == "__main__":
     model_config = read_yaml(cfg=args.model)
     data_config = read_yaml(cfg=args.data)
     hyperparam_config = read_yaml(cfg=args.hyperparam)
+    data_config['IMG_SIZE'] = hyperparam_config["img_size"]
+    data_config['BATCH_SIZE'] = hyperparam_config["batch_size"]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    log_dir = os.path.join("/opt/ml/output/optuna_exp", datetime.now().strftime("%m%d_%H%M"))
+    
+    log_dir = os.path.dirname(args.model)
     os.makedirs(log_dir, exist_ok=True)
 
     test_loss, test_f1, test_acc = train(

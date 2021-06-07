@@ -265,6 +265,15 @@ def train_model(trial,
     )
     return best_f1
 
+def get_LBscore(f1, macs): # 낮을수록 좋음
+    if f1 < 0.5:  
+        score = 1.0
+    elif f1 < 0.8342: 
+        score = (1 - f1 / 0.8342)
+    else:
+        score = 0.5 * (1 - f1 / 0.8342)
+    score += macs / 13863553
+    return score
 
 def objective(trial: optuna.trial.Trial) -> float:
     """Get objective score.
@@ -286,12 +295,14 @@ def objective(trial: optuna.trial.Trial) -> float:
     print(f"macs: {macs}")
 
     best_f1 = train_model(trial, model_instance, hyperparam_config)
-    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}', reinit=False)
-    wandb.log({'f1':best_f1, 'MACs':macs})
+
+    LBscore = get_LBscore(best_f1, macs)
+
+    run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
+    wandb.log({'f1':best_f1, 'MACs':macs, 'LB score': LBscore})
     run.finish()
     
-    return best_f1, macs
-
+    return LBscore
 
 if __name__ == "__main__":
     # Setting base
@@ -327,7 +338,7 @@ if __name__ == "__main__":
 
     # Setting directory - for save best trials model weight
     if args.save_model:
-        save_model_dir_base = f"/opt/ml/input/optuna_exp/{cur_time}"
+        save_model_dir_base = f"/opt/ml/input/config/optuna_model/{cur_time}"
         save_model_fn_base = cur_time
 
     # Setting directory - for save [best/all] trials model config
@@ -343,7 +354,7 @@ if __name__ == "__main__":
     module_config = read_yaml(args.module) 
     optimizer_config = read_yaml(args.optimizer) 
     scheduler_config = read_yaml(args.scheduler) 
-      
+
     if args.study_name: # when use database
         # DB setup
         load_dotenv(verbose=True)
@@ -358,14 +369,14 @@ if __name__ == "__main__":
         # Optuna study
         study = optuna.create_study(storage=storage_name,
                                     study_name=args.study_name,
-                                    load_if_exists=True,
-                                    directions=["maximize", "minimize"])
+                                    load_if_exists=True)
         study.optimize(objective, n_trials=args.n_trials)
 
     else:
         # Optuna study
-        study = optuna.create_study(directions=["maximize", "minimize"])
+        study = optuna.create_study()
         study.optimize(objective, n_trials=args.n_trials)
+
     
     # # Setting directory - for visualization
     # visualization_dir = "/opt/ml/output/visualization_result"
