@@ -12,8 +12,7 @@ from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 
 from src.model import Model
-from src.augmentation.policies import simple_augment_test
-from src.utils.common import read_yaml
+from src.utils.common import read_yaml, str2bool
 from src.utils.inference_utils import run_model
 from src.utils.decompose import decompose
 
@@ -98,7 +97,7 @@ if __name__ == "__main__":
 	    "--img_root", required=True, type=str, help="image folder root. e.g) 'data/test'"
     )
     parser.add_argument(
-        "--decompose", default=False, type=bool, help="whether apply decomposition to convolution layers"
+        "--decompose", type=str2bool, nargs='?', const=True, default=False, help="whether apply decomposition to convolution layers"
     )
     args = parser.parse_args()
 
@@ -112,12 +111,12 @@ if __name__ == "__main__":
     model_instance = Model(args.model_config, verbose=True)
     model_instance.model.load_state_dict(torch.load(args.weight, map_location=torch.device('cpu')))
 
-    print(model_instance.model)
     # apply tensor decomposition to conv layers
     # Applicable conditions: kernel size 3 or higher, groups 1
     if args.decompose:
         model_instance.model = decompose(model_instance.model)
-    print(model_instance.model)
+        print("===AFTER DECOMPOSITION===")
+        print(model_instance.model)
 
     # inference
     inference(model_instance.model, dataloader, args.dst)

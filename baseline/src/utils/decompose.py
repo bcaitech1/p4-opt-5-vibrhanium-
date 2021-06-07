@@ -1,8 +1,9 @@
+from typing import List
+
 import torch
 import torch.nn as nn
 import tensorly as tl
-from tensorly.decomposition import parafac, partial_tucker
-from typing import List
+from tensorly.decomposition import partial_tucker
 
 
 # def set_register_buffer(module: nn.Module):
@@ -25,7 +26,7 @@ def tucker_decomposition_conv_layer(
     core, [last, first] = partial_tucker(
         layer.weight.data,
         modes=[0, 1],
-        n_iter_max=2000000,
+        n_iter_max=200000,
         rank=rank,
         init="svd"
     )
@@ -82,7 +83,9 @@ def decompose(module):
     for name, child_layer in module.named_children():
         if isinstance(child_layer, nn.Conv2d):
             if child_layer.kernel_size[0] != 1 and child_layer.groups == 1:
+                print(f"{(name)}: {child_layer} 분해 중..")
                 setattr(module, name, tucker_decomposition_conv_layer(child_layer))
+                print("분해 완료!")
         elif list(child_layer.children()):
             decomposed_module = decompose(child_layer)
             if decomposed_module:

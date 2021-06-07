@@ -1,8 +1,9 @@
+import argparse
 from typing import Any, Dict, Union
 
+import yaml
 import numpy as np
 from torchvision.datasets import ImageFolder, VisionDataset
-import yaml
 
 
 def read_yaml(cfg: Union[str, Dict[str, Any]]):
@@ -24,3 +25,14 @@ def get_label_counts(dataset_path: str):
     for p, l in td.samples:
         label_counts[l] += 1
     return label_counts
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
