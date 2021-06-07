@@ -16,10 +16,9 @@ import torch.optim.lr_scheduler as lr_scheduler
 from dotenv import load_dotenv
 
 from src.dataloader import create_dataloader
-from src.loss import CustomCriterion
 from src.model import Model
 from src.trainer import TorchTrainer
-from src.utils.common import get_label_counts, read_yaml
+from src.utils.common import read_yaml, get_LBscore
 from src.utils.macs import calc_macs
 
 
@@ -196,10 +195,12 @@ def search_hyperparam(trial: optuna.trial.Trial) -> Dict[str, Any]:
     return hyperparam_config
 
 
-def train_model(trial,
+def train_model(
+    trial,
     model_instance: nn.Module,
-    hyperparam_config: Dict[str, Any]
-    ) -> nn.Module:
+    hyperparam_config: Dict[str, Any],
+    macs: int
+) -> nn.Module:
     """Create trainer and train.
     Args:
         model_config: Torch model to be trained.
@@ -247,6 +248,7 @@ def train_model(trial,
         model_path = os.path.join(save_model_dir, model_fn)
     else:
         model_path = None
+
     # Create trainer
     trainer = TorchTrainer(
         model=model_instance.model,
@@ -256,24 +258,17 @@ def train_model(trial,
         scaler=scaler,
         device=device,
         model_path=model_path,
+        macs=macs,
         verbose=1
     )
-    best_acc, best_f1 = trainer.train(
+    best_lbs, _, best_f1 = trainer.train(
+        trial,
         train_dataloader=train_dl,
         n_epoch=epochs,
         val_dataloader=val_dl if val_dl else test_dl,
     )
-    return best_f1
+    return best_lbs, best_f1
 
-def get_LBscore(f1, macs): # 낮을수록 좋음
-    if f1 < 0.5:  
-        score = 1.0
-    elif f1 < 0.8342: 
-        score = (1 - f1 / 0.8342)
-    else:
-        score = 0.5 * (1 - f1 / 0.8342)
-    score += macs / 13863553
-    return score
 
 def objective(trial: optuna.trial.Trial) -> float:
     """Get objective score.
@@ -294,15 +289,16 @@ def objective(trial: optuna.trial.Trial) -> float:
     macs = calc_macs(model_instance.model, (3, hyperparam_config["img_size"], hyperparam_config["img_size"]))
     print(f"macs: {macs}")
 
-    best_f1 = train_model(trial, model_instance, hyperparam_config)
+    best_lbs, best_f1 = train_model(trial, model_instance, hyperparam_config, macs)
 
-    LBscore = get_LBscore(best_f1, macs)
-
+    if trial.should_prune():
+        raise optuna.exceptions.TrialPruned()
     run = wandb.init(project='OPT', name = f'{cur_time}_{trial.number}' , reinit=False)
-    wandb.log({'f1':best_f1, 'MACs':macs, 'LB score': LBscore})
+    wandb.log({'f1':best_f1, 'MACs':macs, 'LB score': best_lbs})
     run.finish()
     
-    return LBscore
+    return best_lbs
+
 
 if __name__ == "__main__":
     # Setting base
@@ -374,7 +370,12 @@ if __name__ == "__main__":
 
     else:
         # Optuna study
-        study = optuna.create_study()
+        study = optuna.create_study(
+            direction="minimize",
+            pruner=optuna.pruners.MedianPruner(
+                n_startup_trials=10, n_warmup_steps=5, interval_steps=5
+            )
+        )
         study.optimize(objective, n_trials=args.n_trials)
 
     
