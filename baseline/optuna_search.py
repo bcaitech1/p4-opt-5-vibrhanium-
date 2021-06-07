@@ -369,13 +369,12 @@ if __name__ == "__main__":
         # Optuna study
         study = optuna.create_study(storage=storage_name,
                                     study_name=args.study_name,
-                                    load_if_exists=True,
-                                    directions=["maximize", "minimize"])
+                                    load_if_exists=True)
         study.optimize(objective, n_trials=args.n_trials)
 
     else:
         # Optuna study
-        study = optuna.create_study(directions=["maximize", "minimize"])
+        study = optuna.create_study()
         study.optimize(objective, n_trials=args.n_trials)
 
     
