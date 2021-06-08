@@ -112,8 +112,13 @@ class TorchTrainer:
         self.macs = macs
         self.verbose = verbose
 
-        self.cur_time = cur_time
-        self.number = number
+        if cur_time != -1:    
+            self.cur_time = cur_time
+            self.number = number
+            self.wandb_logging = True
+        else:
+            self.wandb_logging = False
+
 
     def train(
         self,
@@ -132,7 +137,8 @@ class TorchTrainer:
         Returns:
             loss and accuracy
         """
-        run = wandb.init(project='OPT', name = f'{self.cur_time}_{self.number}_epochs' , reinit=False)
+        if self.wandb_logging:
+            run = wandb.init(project='OPT', name = f'{self.cur_time}_{self.number}_epochs' , reinit=False)
             
         best_lbs = 1e10
         best_test_acc = -1.0
@@ -181,11 +187,12 @@ class TorchTrainer:
                     f"F1(macro): {f1_score(y_true=gt, y_pred=preds, labels=label_list, average='macro', zero_division=0):.2f}, "
                     f"Acc: {(correct / total) * 100:.2f}% "
                 )
-                wandb.log({
-                    'loss':(running_loss / (batch + 1)), 
-                    'train_f1': f1_score(y_true=gt, y_pred=preds, labels=label_list, average='macro', zero_division=0),
-                    'acc': (correct / total)
-                    })
+                if self.wandb_logging:
+                    wandb.log({
+                        'loss':(running_loss / (batch + 1)), 
+                        'train_f1': f1_score(y_true=gt, y_pred=preds, labels=label_list, average='macro', zero_division=0),
+                        'acc': (correct / total)
+                        })
             pbar.close()
 
             _, test_f1, test_acc = self.test(
@@ -193,11 +200,13 @@ class TorchTrainer:
             )
             test_lbs = get_LBscore(test_f1, self.macs)
             trial.report(test_lbs, epoch)
-            wandb.log({'test_f1':test_f1, 'test_LB score': test_lbs})
+            if self.wandb_logging:
+                wandb.log({'test_f1':test_f1, 'test_LB score': test_lbs})
 
 
-            if trial.should_prune(): 
-                run.finish()
+            if trial.should_prune():
+                if self.wandb_logging:
+                    run.finish()
                 raise optuna.exceptions.TrialPruned()
 
             if best_lbs <= test_lbs:
@@ -215,7 +224,8 @@ class TorchTrainer:
                     data=data,
                     device=self.device,
                 )
-        run.finish()
+        if self.wandb_logging:
+            run.finish()
 
         return best_lbs, best_test_acc, best_test_f1
 
