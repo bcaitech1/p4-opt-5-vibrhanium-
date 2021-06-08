@@ -122,10 +122,10 @@ class TorchTrainer:
 
     def train(
         self,
-        trial,
         train_dataloader: DataLoader,
         n_epoch: int,
         val_dataloader: Optional[DataLoader] = None,
+        trial = None
     ) -> Tuple[float, float]:
         """Train model.
 
@@ -199,15 +199,17 @@ class TorchTrainer:
                 model=self.model, test_dataloader=val_dataloader
             )
             test_lbs = get_LBscore(test_f1, self.macs)
-            trial.report(test_lbs, epoch)
+            
             if self.wandb_logging:
                 wandb.log({'test_f1':test_f1, 'test_LB score': test_lbs})
 
+            if trial:
+                trial.report(test_lbs, epoch)
 
-            if trial.should_prune():
-                if self.wandb_logging:
-                    run.finish()
-                raise optuna.exceptions.TrialPruned()
+                if trial.should_prune():
+                    if self.wandb_logging:
+                        run.finish()
+                    raise optuna.exceptions.TrialPruned()
 
             if best_lbs <= test_lbs:
                 continue
