@@ -79,6 +79,7 @@ def train(
         criterion=criterion,
         optimizer=optimizer,
         scheduler=scheduler,
+        macs=macs,
         scaler=scaler,
         device=device,
         model_path=model_path,

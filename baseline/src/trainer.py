@@ -83,10 +83,10 @@ class TorchTrainer:
         criterion: nn.Module,
         optimizer: optim.Optimizer,
         scheduler,
+        macs,
         scaler = None,
         device: torch.device = "cpu",
-        model_path: str = None,        
-        macs = None,
+        model_path: str = None,
         verbose: int = 1,
         cur_time = -1,
         number = -1
