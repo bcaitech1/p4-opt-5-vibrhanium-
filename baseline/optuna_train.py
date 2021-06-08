@@ -39,7 +39,9 @@ def train(
     else:
         model_path = os.path.join(log_dir, "train_best_from_scratch.pt")
 
+    time, trial_number = model_path.split('/')[-3:-1]
     print(f"Model save path: {model_path}")
+    print('time:', time, 'trial_number:', trial_number)
     model_instance.model.to(device)
 
     # Create dataloader
@@ -124,7 +126,6 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     log_dir = os.path.dirname(args.model)
-    time, trial_number = log_dir.split('/')[-2:]
 
     test_loss, test_f1, test_acc = train(
         model_config=model_config,
