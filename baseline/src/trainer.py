@@ -4,10 +4,9 @@
 - Contact: lim.jeikei@gmail.com, placidus36@gmail.com
 """
 
-import os
-import shutil
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
+import optuna
 import numpy as np
 from sklearn.metrics import f1_score
 import torch
@@ -20,6 +19,7 @@ import torchvision
 from tqdm import tqdm
 
 from src.utils.torch_utils import save_model
+from src.utils.common import get_LBscore
 
 
 def _get_n_data_from_dataloader(dataloader: DataLoader) -> int:
@@ -81,9 +81,10 @@ class TorchTrainer:
         criterion: nn.Module,
         optimizer: optim.Optimizer,
         scheduler,
-        scaler=None,
-        model_path: str = None,        
+        scaler = None,
         device: torch.device = "cpu",
+        model_path: str = None,        
+        macs = None,
         verbose: int = 1,
     ) -> None:
         """Initialize TorchTrainer class.
@@ -103,11 +104,13 @@ class TorchTrainer:
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.scaler = scaler
-        self.verbose = verbose
         self.device = device
+        self.macs = macs
+        self.verbose = verbose
 
     def train(
         self,
+        trial,
         train_dataloader: DataLoader,
         n_epoch: int,
         val_dataloader: Optional[DataLoader] = None,
@@ -122,6 +125,7 @@ class TorchTrainer:
         Returns:
             loss and accuracy
         """
+        best_lbs = 1e10
         best_test_acc = -1.0
         best_test_f1 = -1.0
         num_classes = _get_len_label_from_dataset(train_dataloader.dataset)
@@ -173,13 +177,21 @@ class TorchTrainer:
             _, test_f1, test_acc = self.test(
                 model=self.model, test_dataloader=val_dataloader
             )
-            if best_test_f1 > test_f1:
+            test_lbs = get_LBscore(test_f1, self.macs)
+            trial.report(test_lbs, epoch)
+
+            if trial.should_prune(): 
+                raise optuna.exceptions.TrialPruned() 
+
+            if best_lbs <= test_lbs:
                 continue
 
+            best_lbs = test_lbs
             best_test_f1 = test_f1
             best_test_acc = test_acc
+
             if self.model_path:
-                print(f"Model saved. Current best test f1: {best_test_f1:.3f}")
+                print(f"Model saved. Current best test f1: {best_test_f1:.3f} / test lbs: {best_lbs:.3f}")
                 save_model(
                     model=self.model,
                     path=self.model_path,
@@ -187,7 +199,7 @@ class TorchTrainer:
                     device=self.device,
                 )
 
-        return best_test_acc, best_test_f1
+        return best_lbs, best_test_acc, best_test_f1
 
 
     @torch.no_grad()
