@@ -32,13 +32,14 @@ def train(
 ) -> Tuple[float, float, float]:
     """Train."""
     model_instance = Model(model_config, verbose=True)
-    model_path = os.path.join(log_dir, "train_best.pt")
-    print(f"Model save path: {model_path}")
         
     if args.weight:
         model_instance.model.load_state_dict(torch.load(args.weight, map_location=device))
-    elif os.path.isfile(model_path):
-        model_instance.model.load_state_dict(torch.load(model_path, map_location=device))
+        model_path = os.path.join(log_dir, "train_best_from_weight.pt")
+    else:
+        model_path = os.path.join(log_dir, "train_best_from_scratch.pt")
+
+    print(f"Model save path: {model_path}")
     model_instance.model.to(device)
 
     # Create dataloader
