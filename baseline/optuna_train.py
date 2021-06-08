@@ -32,13 +32,16 @@ def train(
 ) -> Tuple[float, float, float]:
     """Train."""
     model_instance = Model(model_config, verbose=True)
-    model_path = os.path.join(log_dir, "train_best.pt")
-    print(f"Model save path: {model_path}")
         
     if args.weight:
         model_instance.model.load_state_dict(torch.load(args.weight, map_location=device))
-    elif os.path.isfile(model_path):
-        model_instance.model.load_state_dict(torch.load(model_path, map_location=device))
+        model_path = os.path.join(log_dir, "train_best_from_weight.pt")
+    else:
+        model_path = os.path.join(log_dir, "train_best_from_scratch.pt")
+
+    time, trial_number = model_path.split('/')[-3:-1]
+    print(f"Model save path: {model_path}")
+    print('time:', time, 'trial_number:', trial_number)
     model_instance.model.to(device)
 
     # Create dataloader
@@ -76,10 +79,13 @@ def train(
         criterion=criterion,
         optimizer=optimizer,
         scheduler=scheduler,
+        macs=macs,
         scaler=scaler,
         device=device,
         model_path=model_path,
         verbose=1,
+        cur_time=time,
+        number=trial_number
     )
     best_acc, best_f1 = trainer.train(
         train_dataloader=train_dl,
@@ -121,7 +127,6 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     log_dir = os.path.dirname(args.model)
-    os.makedirs(log_dir, exist_ok=True)
 
     test_loss, test_f1, test_acc = train(
         model_config=model_config,
