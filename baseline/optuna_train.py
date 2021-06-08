@@ -81,6 +81,8 @@ def train(
         device=device,
         model_path=model_path,
         verbose=1,
+        cur_time=time,
+        number=trial_number
     )
     best_acc, best_f1 = trainer.train(
         train_dataloader=train_dl,
@@ -122,6 +124,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     log_dir = os.path.dirname(args.model)
+    time, trial_number = log_dir.split('/')[-2:]
 
     test_loss, test_f1, test_acc = train(
         model_config=model_config,
