@@ -37,6 +37,7 @@ import timm
 
 model_name = "shufflenet_v2_x0_5"
 Model = torchvision.models.shufflenet_v2_x0_5(pretrained=True)
+Model = Model.fc.out_features = 9
 
 # timm사용시에는 이렇게
 # Model = timm.create_model("efficientnet_b0", num_classes=9, pretrained=True)
@@ -60,7 +61,6 @@ def train_pretrained(
         yaml.dump(model_config, f, default_flow_style=False)
 
     model = Model
-    model.fc.out_features = 9
 
     model_path = os.path.join(log_dir, "best.pt")
     print(f"Model save path: {model_path}")
@@ -143,7 +143,9 @@ if __name__ == "__main__":
     try:
         now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         log_name = f"{model_name}_{now_str}"
-        log_dir = os.path.join("/opt/ml/input/pretrained_exp", f"{model_name}_{now_str}")
+        log_dir = os.path.join(
+            "/opt/ml/input/pretrained_exp", f"{model_name}_{now_str}"
+        )
         os.makedirs(log_dir, exist_ok=True)
 
         test_loss, test_f1, test_acc = train_pretrained(
