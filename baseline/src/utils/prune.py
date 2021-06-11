@@ -1,5 +1,6 @@
 import torch.nn.utils.prune as prune
 import torch.nn.functional as F
+import torch.nn as nn
 import torch
 
 def model_prune(
