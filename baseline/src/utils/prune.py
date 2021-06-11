@@ -17,14 +17,21 @@ def model_prune(
             if structured:
                 prune.ln_structured(module, name='weight', amount=conv_prun_rate, n=conv_prun_norm, dim=0)
             else:
-                prune.l2_unstructured(module, name='weight', amount=conv_prun_rate)
+                if conv_prun_norm == 1:
+                    prune.l1_unstructured(module, name='weight', amount=conv_prun_rate)
+                else:
+                    prune.l2_unstructured(module, name='weight', amount=conv_prun_rate)
             prune.remove(module,'weight')
 
         elif isinstance(module, torch.nn.modules.linear.Linear):
             if structured:
                 prune.ln_structured(module, name='weight', amount=linear_prun_rate, n=conv_prun_norm, dim=0)
             else:
-                prune.l2_unstructured(module, name='weight', amount=linear_prun_rate)
+                if linear_prun_norm == 1:
+                    prune.l1_unstructured(module, name='weight', amount=linear_prun_rate)
+                else:
+                    prune.l2_unstructured(module, name='weight', amount=linear_prun_rate)
+                
             prune.remove(module,'weight')
     
     print("-"*10+'prun 적용 모듈'+"-"*10)
