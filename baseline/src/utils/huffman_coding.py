@@ -209,7 +209,7 @@ def huffman_encode_model(model, directory='encodings/'):
     compressed_total = 0
     print(f"{'Layer':<45} | {'original':>10} {'compressed':>10} {'improvement':>11} {'percent':>7}")
     print('-'*70)
-    for i, (name, param) in enumerate(model.named_parameters()):
+    for name, param in model.named_parameters():
         if 'mask' in name:
             continue
         if 'weight' in name:
@@ -220,7 +220,7 @@ def huffman_encode_model(model, directory='encodings/'):
             if len(shape) == 4:
                 weight = weight.reshape(shape[0], -1)
                 shape = weight.shape
-                
+
             form = 'csr' if shape[0] < shape[1] else 'csc'
             mat = csr_matrix(weight, shape) if shape[0] < shape[1] else csc_matrix(weight, shape)
 
@@ -252,7 +252,7 @@ def huffman_encode_model(model, directory='encodings/'):
 
 
 def huffman_decode_model(model, directory='encodings/'):
-    for i, (name, param) in enumerate(model.named_parameters()):
+    for name, param in model.named_parameters():
         if 'mask' in name:
             continue
         if 'weight' in name:
@@ -265,6 +265,11 @@ def huffman_decode_model(model, directory='encodings/'):
             if len(shape) == 4:
                 weight = weight.reshape(shape[0], -1)
                 shape = weight.shape
+
+            elif len(shape) == 1:
+                wieght = np.load(directory+'/'+name, allow_pickle=True)
+                param.data = torch.from_numpy(wieght).to(dev)
+                continue
                 
             form = 'csr' if shape[0] < shape[1] else 'csc'
             matrix = csr_matrix if shape[0] < shape[1] else csc_matrix

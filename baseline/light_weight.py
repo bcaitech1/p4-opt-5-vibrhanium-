@@ -1,4 +1,5 @@
 import os
+import argparse
 import numpy as np
 
 import torch
@@ -8,7 +9,7 @@ import torchvision.models
 from sklearn.cluster import KMeans
 from scipy.sparse import csc_matrix, csr_matrix
 
-from huffman_coding import huffman_encode
+from src.utils.huffman_coding import huffman_encode
 
 
 # https://github.com/mightydeveloper/Deep-Compression-PyTorch
@@ -56,7 +57,10 @@ def apply_huffman_encode(name, param, directory='encodings/'):
             out_channels = weight.shape[0]
             weight = weight.reshape(out_channels, -1)
             shape = weight.shape
-            
+        elif len(shape) == 1:
+            weight.dump(f'{directory}/{name}')
+            return None
+
         form = 'csr' if shape[0] < shape[1] else 'csc'
         mat = csr_matrix(weight, shape) if shape[0] < shape[1] else csc_matrix(weight, shape)
 
@@ -76,14 +80,10 @@ def apply_huffman_encode(name, param, directory='encodings/'):
         bias = param.data.cpu().numpy()
         bias.dump(f'{directory}/{name}')
 
-        # Print statistics
-        original = bias.nbytes
-        compressed = original
 
-
-def model_optimizer_children(modules, func, *args):    
+def model_optimizer_children(modules, func, *args): 
     try:
-        for module in modules.children():
+        for module in enumerate(modules.children()):
             if isinstance(module, nn.Conv2d):
                 func(module, 'conv2d', *args)
             elif isinstance(module, nn.Linear):
@@ -92,7 +92,7 @@ def model_optimizer_children(modules, func, *args):
                 model_optimizer_children(module, func)
 
     except Exception as e:
-        print('*error*', e)
+        print(f'*error in {modules}*', e)
 
 
 def model_optimizer_params(model, func, *args):
@@ -115,30 +115,33 @@ def test(modules, f):
             
 
 if __name__ == '__main__':
-    model_name = "squeezenet1_1"
+    parser = argparse.ArgumentParser(description="Train model.")
+    parser.add_argument(
+        "--model", required=True, type=str, help="model config path"
+    )
+    parser.add_argument(
+        "--weight", required=True, type=str, help="model weight path"
+    )
+    args = parser.parse_args()
 
-    class Squeezenet1_1(nn.Module):
-        def __init__(self, num_classes: int = 9):
-            super().__init__()
-            self.model = torchvision.models.squeezenet1_1(pretrained=True)
-            self.model.classifier[1] = nn.Conv2d(512, num_classes, kernel_size=(1, 1), stride=(1, 1))
-        def forward(self, x):
-            return self.model(x)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-    model = Squeezenet1_1()
-    model.to(device)
-    weight_path = "/opt/ml/input/exp/squeezenet1_1_0610_2208/best.pt"
-    model.load_state_dict(torch.load(weight_path, map_location=torch.device('cpu')))
+    model = getattr(__import__("src.models", fromlist=[""]), args.model)()  # "Squeezenet1_1"
+    model = model.to(device)
+    try:
+        model.load_state_dict(torch.load(args.weight, map_location=torch.device('cpu')))
+    except:
+        model.load_weight(args.weight)
+    quantized_weight_dir = os.path.join(os.path.dirname(args.weight), "quantized_best")
+    os.makedirs(quantized_weight_dir, exist_ok=True)
 
     # quantization 적용 전
-    with open("before_weight.txt", "w") as f:
+    with open(os.path.join(quantized_weight_dir, "before_weight.txt"), "w") as f:
         test(model, f)
 
-    quantized_weight_dir = os.path.join(os.path.dirname(weight_path), "quantized_best")
     model_optimizer_children(model, apply_weight_sharing, 2)  # weight sharing using 4 groups
     model_optimizer_params(model, apply_huffman_encode, quantized_weight_dir)  # huffman code using codebook
 
-    with open("after_weight.txt", "w") as f:
+    with open(os.path.join(quantized_weight_dir, "after_weight.txt"), "w") as f:
         test(model, f)
