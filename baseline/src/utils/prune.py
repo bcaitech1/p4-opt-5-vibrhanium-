@@ -153,7 +153,7 @@ def set_pruned_channels(pruned_module, name, new_pruned_channels=None):
 
 
 @torch.no_grad()
-def model_structured_prune(
+def model_structured_prune_for_resnet34(
     model: nn.Module,
     conv_prun_norm: int = 1,
     conv_prun_rate: float = 0.2,
@@ -302,7 +302,7 @@ if __name__ == "__main__":
     macs, num_parameters = check_spec(model)
     print(macs, num_parameters)
 
-    optimized_model = model_structured_prune(model)
+    optimized_model = model_structured_prune_for_resnet34(model)
     # print(optimized_model)
     # save_model(
     #     model=optimized_model,
