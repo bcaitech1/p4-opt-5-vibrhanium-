@@ -304,16 +304,10 @@ if __name__ == "__main__":
 
     optimized_model = model_structured_prune(model)
     # print(optimized_model)
-    save_model(
-        model=optimized_model,
-        path=path.join(path.dirname(MODEL_PATH), "pruned_weight.pt")
-        )
+    # save_model(
+    #     model=optimized_model,
+    #     path=path.join(path.dirname(MODEL_PATH), "pruned_weight.pt")
+    #     )
 
     macs, num_parameters = check_spec(optimized_model)
     print(macs, num_parameters)
-
-    # Fine tunning
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    weight_path = path.join(path.dirname(MODEL_PATH), "pruned_weight.pt")
-    optimized_model.load_state_dict(torch.load(weight_path))
-    optimized_model.to(device)
