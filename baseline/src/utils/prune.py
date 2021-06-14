@@ -280,9 +280,18 @@ if __name__ == "__main__":
     MODEL_PATH = path.join(ROOT_PATH, "input/exp/resnet/res.pt")
     sys.path.append(BASE_PATH)
 
-    from src.utils.check import check_spec, evaluate, print_spec
+    from src.utils.macs import calc_macs
     from src.utils.torch_utils import save_model
 
+    # -- MACs, Parameter 수를 체크하는 함수
+    # by jonghyun
+    def check_spec(model):
+        # MAC 계산
+        macs = calc_macs(model, (3, 224, 224))
+        # Parameter 수 계산
+        num_parameters = sum(p.numel() for p in model.parameters())
+    
+        return macs, num_parameters
 
     # -- 모델 선언
     num_classes = 9
