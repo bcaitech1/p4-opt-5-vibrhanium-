@@ -1,0 +1,23 @@
+# Information for params
+# DATA_PATH: The name of the folder of dataset
+# DATASET: The name of the dataset
+# AUG_TRAIN: Which policy to use for train. Check src/augmentation/policies.py
+# AUG_TEST: Which policy to use for test. Check src/augmentation/policies.py
+# AUG_TRAIN_PARAMS: null if AUG_TRAIN does not contain "randaugment" else need (n_select, level, n_level)
+#   n_select: The number of random augmentations you want to apply
+#   level: The magnitude of augmentation (how strong), if you set level to null, it will choose randomly
+#   n_level: level will be choosen between 0, n_level, and the magnitude will be (level / n_level)
+# AUG_TEST_PARAMS: Always set to null
+# BATCH_SIZE: Batch size for training
+# VAL_RATIO:  How many data to be used for validation checking
+
+MODEL: "VGGNet16"
+WEIGHT_PATH: "/opt/ml/p4-opt-5-vibrhanium-/laboratory/weights/vgg.pt"
+ALIAS: "vgg_224_t_d"
+NUM_CLASSES: 9
+
+DATA_PATH: "/opt/ml/input/data/"
+DATASET: "TACO"
+IMG_SIZE: 224
+
+BATCH_SIZE: 64
