@@ -12,6 +12,11 @@ from utils.common import read_yaml, check_spec, print_spec
 from utils.train_utils import get_dataloader, F1CELoss
 from utils.trainer import TorchTrainer
 from optimization.decompose import decompose
+from optimization.prune import (
+    model_structured_prune_for_vgg16, 
+    model_structured_prune_for_resnet34, 
+    model_structured_prune_for_shufflenet_v2
+)
 
 
 def check_before(model, dataloader, img_size, device):
@@ -23,9 +28,10 @@ def check_before(model, dataloader, img_size, device):
     return [before_consumed_time, before_macs, before_num_parameters, before_f1, before_accuracy]
 
 
-def optimize_step(config, optim_func, target_model, per_epochs, scaler, device, model_path):
+def optimize_step(config, optim_func, target_model, per_epochs, scaler, device, model_path, *args):
     # -- Do optimization
     optimized_model = optim_func(target_model).to(device)
+    print("Success to optimize model")
     macs, num_parameters = check_spec(optimized_model, config["IMG_SIZE"])
 
     optimizer = torch.optim.AdamW(optimized_model.parameters(), lr=1e-4)
@@ -51,14 +57,14 @@ def optimize_step(config, optim_func, target_model, per_epochs, scaler, device, 
     )
 
     start_time = time.time()
-    best_acc, best_f1 = trainer.train(
+    best_f1, best_acc = trainer.train(
         train_dataloader=train_loader,
         val_dataloader=valid_loader,
         n_epoch=per_epochs
     )
-    cosumed_time = time.time() - start_time
+    consumed_time = time.time() - start_time
     
-    return cosumed_time, macs, num_parameters, best_f1, best_acc
+    return consumed_time, macs, num_parameters, best_f1, best_acc
 
 
 def optimize(args, iter_num, per_epochs, device):
@@ -90,17 +96,30 @@ def optimize(args, iter_num, per_epochs, device):
     print("=" * 10)
     print()
 
+    if args.opt_type == 0:
+        optim_func = decompose
+    elif args.opt_type == 1:
+        if data_config["MODEL"] == "VGGNet16":
+            optim_func = model_structured_prune_for_vgg16
+        if data_config["MODEL"] == "ResNet34":
+            optim_func = model_structured_prune_for_resnet34
+        if data_config["MODEL"] == "ShuffleNet_v2_x0_5":
+            optim_func = model_structured_prune_for_shufflenet_v2
+    else:
+        print("This type is not supported yet.")
+        assert 0
+
     specs = []
     specs.append(before_spec)
     for i in range(iter_num):
         after_spec = optimize_step(
             config=data_config, 
-            optim_func=decompose, 
+            optim_func=optim_func, 
             target_model=model, 
             per_epochs=per_epochs, 
             scaler=None, 
             device=device, 
-            model_path=f"s{save_path}_{i}_step"
+            model_path=f"{save_path}_{i}_step"
         )
 
         specs.append(after_spec)
@@ -111,12 +130,14 @@ def optimize(args, iter_num, per_epochs, device):
 
     return specs
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="run")
     parser.add_argument("--config", required=True, type=str, help="config file path")
     parser.add_argument("--output_path", required=True, type=str, help="path to save")
+    parser.add_argument("--opt_type", required=True, type=int, help="0: decompose, 1: prune, 2: both")
     args = parser.parse_args()
-
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     specs = optimize(args=args, iter_num=3, per_epochs=2, device=device)
 
