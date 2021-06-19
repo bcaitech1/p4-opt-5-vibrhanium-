@@ -6,7 +6,6 @@
 
 from typing import Optional, Tuple
 
-import optuna
 import numpy as np
 from sklearn.metrics import f1_score
 import torch
@@ -57,6 +56,7 @@ def _get_n_batch_from_dataloader(dataloader: DataLoader) -> int:
 
     return n_data // n_batch
 
+
 def _get_len_label_from_dataset(dataset: Dataset) -> int:
     """Get length of label from dataset.
 
@@ -66,7 +66,9 @@ def _get_len_label_from_dataset(dataset: Dataset) -> int:
     Returns:
         A number of label in set.
     """
-    if isinstance(dataset, torchvision.datasets.ImageFolder) or isinstance(dataset, torchvision.datasets.vision.VisionDataset):
+    if isinstance(dataset, torchvision.datasets.ImageFolder) or isinstance(
+        dataset, torchvision.datasets.vision.VisionDataset
+    ):
         return len(dataset.classes)
     elif isinstance(dataset, torch.utils.data.Subset):
         return _get_len_label_from_dataset(dataset.dataset)
@@ -84,12 +86,11 @@ class TorchTrainer:
         optimizer: optim.Optimizer,
         scheduler,
         macs,
-        scaler = None,
+        scaler=None,
         device: torch.device = "cpu",
         model_path: str = None,
         verbose: int = 1,
-        cur_time = -1,
-        number = -1
+        wandb_name: str = None,
     ) -> None:
         """Initialize TorchTrainer class.
 
@@ -111,21 +112,15 @@ class TorchTrainer:
         self.device = device
         self.macs = macs
         self.verbose = verbose
-
-        if cur_time != -1:    
-            self.cur_time = cur_time
-            self.number = number
-            self.wandb_logging = True
-        else:
-            self.wandb_logging = False
-
+        self.wandb_name = wandb_name
+        self.wandb_logging = True if wandb_name else False
 
     def train(
         self,
         train_dataloader: DataLoader,
         n_epoch: int,
         val_dataloader: Optional[DataLoader] = None,
-        trial = None
+        trial=None,
     ) -> Tuple[float, float]:
         """Train model.
 
@@ -138,8 +133,8 @@ class TorchTrainer:
             loss and accuracy
         """
         if self.wandb_logging:
-            run = wandb.init(project='OPT', name = f'{self.cur_time}_{self.number}_epochs' , reinit=False)
-            
+            run = wandb.init(project="DatasetTest", name=self.wandb_name, reinit=False)
+
         best_lbs = 1e10
         best_test_acc = -1.0
         best_test_f1 = -1.0
@@ -188,28 +183,28 @@ class TorchTrainer:
                     f"Acc: {(correct / total) * 100:.2f}% "
                 )
                 if self.wandb_logging:
-                    wandb.log({
-                        'loss':(running_loss / (batch + 1)), 
-                        'train_f1': f1_score(y_true=gt, y_pred=preds, labels=label_list, average='macro', zero_division=0),
-                        'acc': (correct / total)
-                        })
+                    wandb.log(
+                        {
+                            "loss": (running_loss / (batch + 1)),
+                            "train_f1": f1_score(
+                                y_true=gt,
+                                y_pred=preds,
+                                labels=label_list,
+                                average="macro",
+                                zero_division=0,
+                            ),
+                            "acc": (correct / total),
+                        }
+                    )
             pbar.close()
 
             _, test_f1, test_acc = self.test(
                 model=self.model, test_dataloader=val_dataloader
             )
             test_lbs = get_LBscore(test_f1, self.macs)
-            
+
             if self.wandb_logging:
-                wandb.log({'test_f1':test_f1, 'test_LB score': test_lbs})
-
-            if trial:
-                trial.report(test_lbs, epoch)
-
-                if trial.should_prune():
-                    if self.wandb_logging:
-                        run.finish()
-                    raise optuna.exceptions.TrialPruned()
+                wandb.log({"test_f1": test_f1, "test_LB score": test_lbs})
 
             if best_lbs <= test_lbs:
                 continue
@@ -219,7 +214,9 @@ class TorchTrainer:
             best_test_acc = test_acc
 
             if self.model_path:
-                print(f"Model saved. Current best test f1: {best_test_f1:.3f} / test lbs: {best_lbs:.3f}")
+                print(
+                    f"Model saved. Current best test f1: {best_test_f1:.3f} / test lbs: {best_lbs:.3f}"
+                )
                 save_model(
                     model=self.model,
                     path=self.model_path,
@@ -230,7 +227,6 @@ class TorchTrainer:
             run.finish()
 
         return best_lbs, best_test_acc, best_test_f1
-
 
     @torch.no_grad()
     def test(
@@ -278,7 +274,7 @@ class TorchTrainer:
             gt += labels.to("cpu").tolist()
             pbar.update()
             pbar.set_description(
-                f" Val: {'':5} Loss: {(running_loss / (batch + 1)):.3f}, "
+                f"Val: {'':5} Loss: {(running_loss / (batch + 1)):.3f}, "
                 f"Acc: {(correct / total) * 100:.2f}% "
                 f"F1(macro): {f1_score(y_true=gt, y_pred=preds, labels=label_list, average='macro', zero_division=0):.2f}"
             )
@@ -290,8 +286,6 @@ class TorchTrainer:
         return loss, f1, accuracy
 
 
-def count_model_params(
-    model: torch.nn.Module,
-) -> int:
+def count_model_params(model: torch.nn.Module,) -> int:
     """Count model's parameters"""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
