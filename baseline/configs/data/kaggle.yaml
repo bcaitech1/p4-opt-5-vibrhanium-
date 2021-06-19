@@ -21,7 +21,7 @@ AUG_TEST: "simple_augment_test"
 AUG_TRAIN_PARAMS: 
     n_select: 2
     level: null
-BATCH_SIZE: 64
+BATCH_SIZE: 32
 EPOCHS: 50
 VAL_RATIO: 0.0
 INIT_LR: 0.1

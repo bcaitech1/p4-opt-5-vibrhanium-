@@ -59,8 +59,11 @@ def train_pretrained(
     img_size = data_config["IMG_SIZE"]
 
     # model = getattr(__import__("src.models", fromlist=[""]), model_name)()  # "Resnet34"
-    model = torchvision.models.resnet34(pretrained=True)
-    model.fc = nn.Linear(512, num_classes)
+#     model = torchvision.models.resnet34(pretrained=True)
+#     model.fc = nn.Linear(512, num_classes)
+
+    model = torchvision.models.vgg16(pretrained=True)
+    model.classifier[6] = nn.Linear(4096, num_classes)
 
     if args.prune_resnet34:
         print("Start pruning")
