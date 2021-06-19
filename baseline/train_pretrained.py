@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 import torchvision.models
 import torch.nn.functional as F
+from adamp import AdamP
 
 from src.dataloader import create_dataloader
 from src.loss import CustomCriterion
@@ -52,15 +53,23 @@ def train_pretrained(
     log_name: str,
     fp16: bool,
     device: torch.device,
-    num_classes: int = 9,
+    num_classes: int = 8,
 ) -> Tuple[float, float, float]:
     """Train."""
 
     img_size = data_config["IMG_SIZE"]
 
     # model = getattr(__import__("src.models", fromlist=[""]), model_name)()  # "Resnet34"
-    model = torchvision.models.resnet34(pretrained=True)
-    model.fc = nn.Linear(512, num_classes)
+
+    if model_name == 'Resnet34':
+        model = torchvision.models.resnet34(pretrained=True)
+        model.fc = nn.Linear(512, num_classes)
+    elif model_name == 'Shufflenetv2':
+        model = torchvision.models.shufflenet_v2_x0_5(pretrained=True)
+        model.fc = torch.nn.Linear(1024, num_classes)
+    elif model_name == 'VGG16':
+        model = torchvision.models.vgg16(pretrained=True)
+        model.classifier[6] = nn.Linear(4096, num_classes)
 
     if args.prune_resnet34:
         print("Start pruning")
@@ -81,9 +90,10 @@ def train_pretrained(
     print(f"macs: {macs}")
 
     # Create optimizer, scheduler, criterion
-    optimizer = torch.optim.SGD(
-        model.parameters(), lr=data_config["INIT_LR"], momentum=0.9
-    )
+    # optimizer = torch.optim.SGD(
+    #     model.parameters(), lr=data_config["INIT_LR"], momentum=0.9
+    # )
+    optimizer = AdamP(model.parameters(), lr=data_config["INIT_LR"], weight_decay=1e-5)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer=optimizer, T_max=20
     )
