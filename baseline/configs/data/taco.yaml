@@ -1,3 +1,5 @@
+# p4-opt-5-vibrhanium-/baseline/configs/data/taco.yaml
+
 # Information for params
 # DATA_PATH: The name of the folder of dataset
 # DATASET: The name of the dataset
@@ -20,7 +22,7 @@ AUG_TRAIN_PARAMS:
     n_select: 2
     level: null
 BATCH_SIZE: 64
-EPOCHS: 10
+EPOCHS: 50
 VAL_RATIO: 0.0
 INIT_LR: 0.1
 FP16: True

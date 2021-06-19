@@ -1,4 +1,4 @@
-# p4-opt-5-vibrhanium-/baseline/configs/data/taco_sample.yaml
+# /opt/ml/p4-opt-5-vibrhanium-/baseline/configs/data/kaggle.yaml
 
 # Information for params
 # DATA_PATH: The name of the folder of dataset
@@ -13,7 +13,7 @@
 # BATCH_SIZE: Batch size for training
 # VAL_RATIO:  How many data to be used for validation checking
 
-DATA_PATH: "/opt/ml/input/sample_data/"
+DATA_PATH: "/opt/ml/input/data_kaggle"
 DATASET: "TACO"
 IMG_SIZE: 224
 AUG_TRAIN: "randaugment_train"
@@ -22,7 +22,7 @@ AUG_TRAIN_PARAMS:
     n_select: 2
     level: null
 BATCH_SIZE: 64
-EPOCHS: 100
+EPOCHS: 50
 VAL_RATIO: 0.0
 INIT_LR: 0.1
-FP16: True
+FP16: False
