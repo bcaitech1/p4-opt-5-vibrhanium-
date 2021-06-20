@@ -38,12 +38,35 @@ def check_before(model, dataloader, img_size, device):
     ]
 
 
+# -- Other utils
+def save_model(model, path):
+    """save model to torch script, onnx."""
+    try:
+        torch.save(model, f=path)
+    except:
+        print("Failed to save torch")
+
+
 def optimize_step(
-    config, optim_func, target_model, per_epochs, scaler, device, model_path, *args
+    opt_type,
+    config,
+    optim_func,
+    target_model,
+    per_epochs,
+    scaler,
+    device,
+    model_path_base,
+    *args,
 ):
+    print("torch version", torch.__version__)
+    print("torchvision version", torchvision.__version__)
     # -- Do optimization
     optimized_model = optim_func(target_model).to(device)
     print("Success to optimize model")
+
+    # 모델 구조 저장
+    save_model(optimized_model, f"{model_path_base}_architecture.pt")
+
     macs, num_parameters = check_spec(optimized_model, config["IMG_SIZE"])
 
     optimizer = torch.optim.AdamW(optimized_model.parameters(), lr=1e-4)
@@ -66,7 +89,7 @@ def optimize_step(
         macs=macs,
         scaler=scaler,
         device=device,
-        model_path=model_path,
+        model_path=f"{model_path_base}_weight.pt",
         verbose=1,
     )
 
@@ -86,10 +109,10 @@ def optimize(args, iter_num, per_epochs, device):
 
     save_dir = p.join(args.output_path, alias)
     os.makedirs(save_dir, exist_ok=True)
-    save_path = p.join(save_dir, f"{alias}_{img_size}.pt")
+    save_path_base = p.join(save_dir, f"{alias}")
 
     print(f"Input image size: {img_size}")
-    print(f"Path to save new model: {save_path}")
+    print(f"Path to save new model: {save_path_base}")
 
     if data_config["MODEL"] == "ResNet34":
         model = torchvision.models.resnet34(pretrained=True)
@@ -143,13 +166,14 @@ def optimize(args, iter_num, per_epochs, device):
     # specs.append(before_spec)
     for i in range(iter_num):
         after_spec = optimize_step(
+            opt_type=args.opt_type,
             config=data_config,
             optim_func=optim_func,
             target_model=model,
             per_epochs=per_epochs,
             scaler=None,
             device=device,
-            model_path=f"{save_path[:-3]}_{i}_step.pt",
+            model_path_base=f"{save_path_base}_{i}_step",
         )
 
         specs.append(after_spec)

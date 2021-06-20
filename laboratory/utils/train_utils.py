@@ -114,6 +114,6 @@ class F1CELoss(nn.Module):
 def save_model(model, path):
     """save model to torch script, onnx."""
     try:
-        torch.save(model, f=path)
+        torch.save(model.state_dict(), f=path)
     except:
         print("Failed to save torch")
