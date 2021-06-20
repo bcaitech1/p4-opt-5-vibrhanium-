@@ -213,10 +213,3 @@ if __name__ == "__main__":
             f.write("=" * 10)
             f.write("/n")
 
-    # ## PICKle 저장
-    # import pickle
-
-    # # file_path = p.join(args.output_path, f"decp_{int(args.normed_rank * 10)}.pickle")
-    # file_path = p.join(args.output_path, f"decp_pruning_{data_config['MODEL']}.pickle")
-    # with open(file_path, "wb") as f:
-    #     pickle.dump(specs, f)
