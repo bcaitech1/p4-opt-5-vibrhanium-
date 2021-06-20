@@ -578,3 +578,41 @@ def model_structured_prune_for_vgg16(
             linear_flag = False
 
     return model
+
+
+if __name__ == "__main__":
+    import torchvision.models
+    from os import path
+    import sys
+
+    ROOT_PATH = "/opt/ml/"
+
+    BASE_PATH = path.join(ROOT_PATH, "code")
+    # MODEL_PATH = path.join(ROOT_PATH, "input/exp/resnet/res.pt")
+    sys.path.append(BASE_PATH)
+
+    # -- Other utils
+    def save_model(model, path):
+        """save model to torch script, onnx."""
+        try:
+            torch.save(model, f=path)
+        except:
+            print("Failed to save torch")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # -- 모델 선언
+    num_classes = 9
+
+    model = torchvision.models.resnet34(pretrained=True)
+    model.fc = nn.Linear(512, num_classes)
+    model.to(device)
+
+    optimized_model = model_structured_prune_for_resnet34(model)
+    out_path = "/opt/ml/output/pruned_test.pt"
+    # print(optimized_model)
+    save_model(
+        model=optimized_model, path=out_path,
+    )
+    model = torch.load(out_path)
+    print(model)

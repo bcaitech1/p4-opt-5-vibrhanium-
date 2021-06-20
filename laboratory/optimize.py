@@ -91,6 +91,7 @@ def optimize_step(
         device=device,
         model_path=f"{model_path_base}_weight.pt",
         verbose=1,
+        wandb_name=model_path_base,
     )
 
     start_time = time.time()
@@ -196,7 +197,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
-    specs = optimize(args=args, iter_num=1, per_epochs=1, device=device)
+    specs = optimize(args=args, iter_num=1, per_epochs=50, device=device)
     data_config = read_yaml(cfg=args.config)
 
     file_path = p.join(args.output_path, f"decp_pruning_{data_config['MODEL']}.txt")
