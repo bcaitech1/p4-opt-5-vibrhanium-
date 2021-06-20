@@ -31,9 +31,9 @@ def check_spec(model, img_size):
 
 
 def print_spec(consumed_time, macs, num_parameters, f1, accuracy):
-    print(f"Inference 시간: {consumed_time:.3f}s")
+    print(f"Inference time: {consumed_time:.3f}s")
     print(f"MAC score: {int(macs)}")
-    print(f"Parameter 수: {int(num_parameters)}")
+    print(f"Parameter num: {int(num_parameters)}")
     print()
     print(f"F1 score: {f1:.3f} | Accuracy: {accuracy:.3f}")
     

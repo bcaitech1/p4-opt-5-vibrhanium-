@@ -186,59 +186,6 @@ def set_pruned_channels(pruned_module, name, new_pruned_channels=None):
     return pruned_module
 
 
-def model_prune(
-    model: nn.Module,
-    conv_prun_norm: int = 1,
-    conv_prun_rate: float = 0.2,
-    linear_prun_norm: int = 1,
-    linear_prun_rate: float = 0.4,
-    structured: bool = False,
-):
-
-    for name, module in model.named_modules():
-        if isinstance(module, torch.nn.modules.conv.Conv2d):
-            if structured:
-                prune.ln_structured(
-                    module,
-                    name="weight",
-                    amount=conv_prun_rate,
-                    n=conv_prun_norm,
-                    dim=0,
-                )
-            else:
-                if conv_prun_norm == 1:
-                    prune.l1_unstructured(module, name="weight", amount=conv_prun_rate)
-                else:
-                    prune.l2_unstructured(module, name="weight", amount=conv_prun_rate)
-            prune.remove(module, "weight")
-
-        elif isinstance(module, torch.nn.modules.linear.Linear):
-            if structured:
-                prune.ln_structured(
-                    module,
-                    name="weight",
-                    amount=linear_prun_rate,
-                    n=conv_prun_norm,
-                    dim=0,
-                )
-            else:
-                if linear_prun_norm == 1:
-                    prune.l1_unstructured(
-                        module, name="weight", amount=linear_prun_rate
-                    )
-                else:
-                    prune.l2_unstructured(
-                        module, name="weight", amount=linear_prun_rate
-                    )
-
-            prune.remove(module, "weight")
-
-    print("-" * 10 + "prun 적용 모듈" + "-" * 10)
-    print(dict(model.named_buffers()).keys())
-
-    return model
-
-
 @torch.no_grad()
 def model_structured_prune_for_shufflenet_v2(
     model: nn.Module, conv_prun_norm: int = 1, conv_prun_rate: float = 0.3,
@@ -267,26 +214,21 @@ def model_structured_prune_for_shufflenet_v2(
             # 1X1 CONV(PRUNING 적용 + PRUNING) -> DWCONV(PRING 적용(IN, OUT)만) -> 1X1 CONV(PRUNING 적용(IN, OUT) + PRUNING)
             # 이전 layer에서 pruning된 channel(in_channels) 처리
 
-            if name == "model.conv1.0":
+            if name == "conv1.0":
                 conv_prun_num = int(out_channels * conv_prun_rate)
                 if conv_prun_num % 2 == 1:
                     conv_prun_num = conv_prun_num - 1
-                else:
-                    conv_prun_num = conv_prun_num
                 pruned_module.pruned_num = conv_prun_num
                 out_channels = out_channels
             else:
                 out_channels = in_channels
 
             if name in [
-                "model.stage3.0.branch1.0",
-                "model.stage4.0.branch1.0",
+                "stage3.0.branch1.0",
+                "stage4.0.branch1.0",
             ]:
                 pruned_module.pruned_num = pruned_module.pruned_num * 2
             conv_prun_num = pruned_module.pruned_num
-
-            if name == "model.conv5.0":
-                print(name)
 
             pruned_conv = nn.Conv2d(
                 in_channels=in_channels,
@@ -298,19 +240,8 @@ def model_structured_prune_for_shufflenet_v2(
                 groups=in_channels,
             )
             if groups == 1:
-                # for t, channel in enumerate(pruned_channels):
-                #     pruned_weight = np.delete(pruned_weight, channel - t, axis=1)
-                pruned_weight = pruned_weight[
-                    :,
-                    np.array(
-                        list(
-                            set(range(pruned_weight.shape[1]))
-                            - set(pruned_module.pruned_channels)
-                        )
-                    ),
-                    :,
-                    :,
-                ]
+                for t, channel in enumerate(pruned_channels):
+                    pruned_weight = np.delete(pruned_weight, channel - t, axis=1)
 
             pruned_weight = torch.from_numpy(pruned_weight)
             pruned_conv.weight = torch.nn.Parameter(pruned_weight, requires_grad=True)
@@ -361,7 +292,7 @@ def model_structured_prune_for_shufflenet_v2(
                 )
             new_conv.weight = torch.nn.Parameter(new_weight, requires_grad=True)
 
-            if name == "model.conv5.0":
+            if name == "conv5.0":
                 new_conv = nn.Conv2d(
                     in_channels=144,
                     out_channels=1024,
@@ -395,7 +326,7 @@ def model_structured_prune_for_shufflenet_v2(
                 in_channels, eps, momentum, affine, track_running_stats
             )  # num_features
 
-            if name == "model.conv5.1":
+            if name == "conv5.1":
                 new_batchnorm = nn.BatchNorm2d(
                     1024, eps, momentum, affine, track_running_stats
                 )  # num_features
@@ -409,9 +340,9 @@ def model_structured_prune_for_shufflenet_v2(
                 in_features=in_channels, out_features=out_features, bias=bias
             )  # in_features
 
-            if name == "model.fc":
+            if name == "fc":
                 new_linear = nn.Linear(
-                    in_features=1024, out_features=9, bias=bias
+                    in_features=1024, out_features=8, bias=bias
                 )  # in_features
             set_module(model, name, new_linear)
 

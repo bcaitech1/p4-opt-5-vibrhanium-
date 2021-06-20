@@ -13,8 +13,8 @@
 
 MODEL: "ResNet34"
 WEIGHT_PATH: "/opt/ml/p4-opt-5-vibrhanium-/laboratory/weights/res.pt"
-ALIAS: "res_224_t_d"
-NUM_CLASSES: 9
+ALIAS: "res_224_pruning"
+NUM_CLASSES: 8
 
 DATA_PATH: "/opt/ml/input/data/"
 DATASET: "TACO"

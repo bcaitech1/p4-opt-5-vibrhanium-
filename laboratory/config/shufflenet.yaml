@@ -13,8 +13,8 @@
 
 MODEL: "ShuffleNet_v2_x0_5"
 WEIGHT_PATH: "/opt/ml/p4-opt-5-vibrhanium-/laboratory/weights/shuffle.pt"
-ALIAS: "shuffle_224_t_d"
-NUM_CLASSES: 9
+ALIAS: "shuffle_224_pruning"
+NUM_CLASSES: 8
 
 DATA_PATH: "/opt/ml/input/data/"
 DATASET: "TACO"

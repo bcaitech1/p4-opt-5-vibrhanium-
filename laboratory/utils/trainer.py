@@ -5,7 +5,6 @@
 """
 
 import wandb
-import optuna
 from tqdm import tqdm
 from sklearn.metrics import f1_score
 import torch
@@ -23,12 +22,11 @@ class TorchTrainer:
         optimizer,
         scheduler,
         macs,
-        scaler = None,
-        device = "cpu",
-        model_path = None,
-        verbose = 1,
-        cur_time = -1,
-        number = -1
+        scaler=None,
+        device="cpu",
+        model_path=None,
+        verbose=1,
+        wandb_name: str = None,
     ):
         """Initialize TorchTrainer class.
 
@@ -50,16 +48,13 @@ class TorchTrainer:
         self.device = device
         self.macs = macs
         self.verbose = verbose
+        self.wandb_name = wandb_name
+        self.wandb_logging = True if wandb_name else False
 
-        if cur_time != -1:    
-            self.cur_time = cur_time
-            self.number = number
-            self.wandb_logging = True
-        else:
-            self.wandb_logging = False
+        if self.wandb_logging:
+            run = wandb.init(project="DatasetTest", name=self.wandb_name, reinit=False)
 
-
-    def train(self, train_dataloader, val_dataloader, n_epoch, trial = None):
+    def train(self, train_dataloader, val_dataloader, n_epoch, trial=None):
         """Train model.
 
         Args:
@@ -71,11 +66,11 @@ class TorchTrainer:
             loss and accuracy
         """
         if self.wandb_logging:
-            run = wandb.init(project='OPT', name = f'{self.cur_time}_{self.number}_epochs' , reinit=False)
-            
+            run = wandb.init(project="LightWeight", name=self.wandb_name, reinit=False,)
+
         best_acc = -1.0
         best_f1 = -1.0
-        num_classes = 9
+        num_classes = 8
         label_list = [i for i in range(num_classes)]
 
         for epoch in range(n_epoch):
@@ -120,19 +115,27 @@ class TorchTrainer:
                     f"Acc: {(correct / total) * 100:.2f}% "
                 )
                 if self.wandb_logging:
-                    wandb.log({
-                        'loss':(running_loss / (batch + 1)), 
-                        'train_f1': f1_score(y_true=gt, y_pred=preds, labels=label_list, average='macro', zero_division=0),
-                        'train_acc': (correct / total)
-                        })
+                    wandb.log(
+                        {
+                            "loss": (running_loss / (batch + 1)),
+                            "train_f1": f1_score(
+                                y_true=gt,
+                                y_pred=preds,
+                                labels=label_list,
+                                average="macro",
+                                zero_division=0,
+                            ),
+                            "train_acc": (correct / total),
+                        }
+                    )
             pbar.close()
 
             _, test_f1, test_acc = self.test(
                 model=self.model, test_dataloader=val_dataloader
             )
-            
+
             if self.wandb_logging:
-                wandb.log({'test_f1':test_f1, 'test_acc': test_acc})
+                wandb.log({"test_f1": test_f1, "test_acc": test_acc})
 
             if trial:
                 trial.report(test_f1, epoch)
@@ -149,16 +152,14 @@ class TorchTrainer:
             best_acc = test_acc
 
             if self.model_path:
-                print(f"Model saved. Current best test f1: {best_f1:.3f} / test acc: {best_acc:.3f}")
-                save_model(
-                    model=self.model,
-                    path=self.model_path
+                print(
+                    f"Model saved. Current best test f1: {best_f1:.3f} / test acc: {best_acc:.3f}"
                 )
+                save_model(model=self.model, path=self.model_path)
         if self.wandb_logging:
             run.finish()
 
         return best_f1, best_acc
-
 
     @torch.no_grad()
     def test(self, model, test_dataloader):
@@ -177,7 +178,7 @@ class TorchTrainer:
         correct = 0
         total = 0
 
-        num_classes = 9
+        num_classes = 8
         label_list = [i for i in range(num_classes)]
 
         pbar = tqdm(enumerate(test_dataloader), total=len(test_dataloader))
