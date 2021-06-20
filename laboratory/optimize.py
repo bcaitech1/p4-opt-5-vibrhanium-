@@ -197,8 +197,17 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
-    specs = optimize(args=args, iter_num=1, per_epochs=50, device=device)
+    specs = optimize(args=args, iter_num=3, per_epochs=20, device=device)
     data_config = read_yaml(cfg=args.config)
+
+    real_macs, params = get_model_complexity_info(
+        model=model,
+        input_res=(3, img_size, img_size),
+        as_strings=False,
+        print_per_layer_stat=False,
+        verbose=False,
+        ignore_modules=[nn.ReLU, nn.PReLU, nn.ELU, nn.LeakyReLU, nn.ReLU6],
+    )
 
     file_path = p.join(args.output_path, f"decp_pruning_{data_config['MODEL']}.txt")
     with open(file_path, "w") as f:
@@ -206,7 +215,7 @@ if __name__ == "__main__":
             f.write(f"{i}-th values")
             consumed_time, macs, num_parameters, f1, accuracy = spec
             f.write(f"Inference time: {consumed_time:.3f}s")
-            f.write(f"MAC score: {int(macs)}")
+            f.write(f"Final MAC score: {int(real_macs)}")
             f.write(f"Parameter num: {int(num_parameters)}")
             f.write("/n")
             f.write(f"F1 score: {f1:.3f} | Accuracy: {accuracy:.3f}")
