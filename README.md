@@ -9,13 +9,22 @@
 모델의 f1 score가 0.5이상 후에 f1 score의 비중을 줄여 MACs를 통해 좋은 점수를 받을 수 있도록 score를 설계
 
 
-
+<!-- 
 $score = score_{MACs} + socre_{F1}$
 
 $$score_{MACs} = \frac {제출모델 MACs} {기준모델 MACs}$$
 
-$$ score_{F1}=\begin{cases}1\; \quad \quad\quad\quad\quad\quad\quad\quad\quad\quad,if   \ 제출모델 F1score < 0.5 \;\\0.5*(1- \frac {제출모델 F1score}{기준모델 F1score})\;,if \ 제출모델 F1score \ ≥ 0.5\end{cases}$$
+$$ score_{F1}=\begin{cases}1\; \quad \quad\quad\quad\quad\quad\quad\quad\quad\quad,if   \ 제출모델 F1score < 0.5 \;\\0.5*(1- \frac {제출모델 F1score}{기준모델 F1score})\;,if \ 제출모델 F1score \ ≥ 0.5\end{cases}$$ -->
 
+<p align="center"><img src="https://user-images.githubusercontent.com/31814363/126026932-80faaeaf-f71d-473a-8241-01f755aaf2bb.png" width="500"></p>
+<p align="center"><img src="https://user-images.githubusercontent.com/31814363/126026982-b69dee93-1db6-4cbd-a012-bbb96fe128a2.png" width="500"></p>
+
+<!-- 
+||MACs|F1score|Score|
+|--|:--:|:--:|--|
+|예시모델1|350M|0.4|0.63+1 = 1.63|
+|예시모델2|650M|0.8|1.18-0.5*0.14 = 1.11|
+|예시모델3|650M|0.4|1.18+1 = 2.18| -->
 	
 ## 🎁 데이터 소개 (데이터 비공개)
 COCO format의 재활용 쓰레기 데이터인 TACO 데이터셋의 Bounding box를 crop 한 데이터
